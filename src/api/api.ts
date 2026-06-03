@@ -6,12 +6,23 @@ export interface ApiResponse<T = any> {
     message: string;
 }
 
+export class RegisterInput {
+    email!: string;
+    password!: string;
+    fullName!: string;
+}
+
+export class LoginInput {
+    email!: string;
+    password!: string;
+}
+
 export const authApi = {
-    login: (data: any): Promise<ApiResponse<any>> => {
+    login: (data: LoginInput): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/login', data);
     },
 
-    register: (data: any): Promise<ApiResponse<boolean>> => {
+    register: (data: RegisterInput): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/register', data);
     },
 
