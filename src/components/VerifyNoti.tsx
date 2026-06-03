@@ -2,10 +2,10 @@ import hero from "@/assets/images/verify-email-hero.png";
 
 interface VerifyInfo {
     email: string;
-    onResend: () => void;
+    // onResend: () => void;
 }
 
-export const VerifyNoti = ({ email, onResend }: VerifyInfo) => {
+export const VerifyNoti = ({ email }: VerifyInfo) => {
   return (
     <main className="flex flex-col items-center justify-center min-h-115 px-6 py-12">
         <div className="flex flex-col items-center text-center max-w-160">
@@ -27,7 +27,6 @@ export const VerifyNoti = ({ email, onResend }: VerifyInfo) => {
           <p className="text-base text-primary-cyan mt-1">
             Didn't receive an email?{" "}
             <button
-              onClick={onResend}
               className="bg-transparent border-none p-0 text-foreground font-medium text-sm font-body underline underline-offset-2 cursor-pointer hover:opacity-70 transition-opacity"
             >
               Resend Verification Link

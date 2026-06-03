@@ -33,6 +33,14 @@ export const authApi = {
     refreshToken: (): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/refresh-token');
     },
+
+    verifyEmail: (token: string): Promise<ApiResponse<any>> => {
+        return axiosInstance.get('/auth/verify-email', {
+            params: {
+                token: token
+            }
+        });
+    },
     
     logout: (): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/logout');

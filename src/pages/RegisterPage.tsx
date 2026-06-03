@@ -6,6 +6,7 @@ import { authApi, type RegisterInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type RegisterFormData = RegisterInput & {
   confirmPassword: string;
@@ -18,6 +19,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+  const navigate = useNavigate();
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; fullname?: string, confirmPassword?: string }>({});
   const [generalError, setGeneralError] = useState<string>("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -100,6 +102,10 @@ export default function RegisterPage() {
 
     try {
       await authApi.register(registerData);
+      
+      navigate("/verify-email", {
+        state: { email: formData.email },
+      });
     } catch (error: any) {
       console.log({error})
       // Xử lý lỗi trả về từ Backend

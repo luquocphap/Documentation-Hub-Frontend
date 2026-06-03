@@ -62,6 +62,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await authApi.login(formData);
+      alert("Login thành công")
     } catch (error: any) {
       console.log({ error });
       // Xử lý lỗi trả về từ Backend

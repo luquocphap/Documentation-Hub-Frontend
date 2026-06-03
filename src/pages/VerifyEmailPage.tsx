@@ -1,14 +1,13 @@
 import Header from "@/components/ui/Header";
-import hero from "@/assets/images/verify-email-hero.png";
 import VerifyNoti from "@/components/VerifyNoti";
 interface VerifyEmailPageProps {
   email?: string;
-  onResend: () => void;
+//   onResend: () => void;
 }
 
 export function VerifyEmailPage({
   email = "abc123@gmail.com",
-  onResend,
+//   onResend,
 }: VerifyEmailPageProps) {
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
@@ -16,8 +15,7 @@ export function VerifyEmailPage({
         brandName="Folio"
       />
 
-      <VerifyNoti email={email} onResend={onResend} />
-      
+      <VerifyNoti email={email} />
     </div>
   );
 }
