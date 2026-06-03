@@ -1,5 +1,6 @@
-import { memo, useRef } from "react";
+import { memo } from "react";
 import hero from "@/assets/images/auth-hero.png";
+import logo from "@/assets/images/logo.png";
 
 export const AuthHeroPanel = memo(function AuthHeroPanel() {
   return (
@@ -13,21 +14,10 @@ export const AuthHeroPanel = memo(function AuthHeroPanel() {
         {/* Lớp phủ nội dung trên ảnh */}
         <div className="absolute top-1/3 left-18 right-12 z-10 flex -translate-y-1/2 flex-col items-start gap-4 text-left">
             <div className="flex flex-col items-start gap-4">
-                <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="text-foreground"
-                >
-                <path
-                    d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
+                <img src={logo}
+                 alt="hero"
+                 className="w-16 h-auto"
                 />
-                </svg>
 
                 <h1 className="text-3xl font-bold text-foreground">
                 Folio
