@@ -1,16 +1,13 @@
 import { AuthLayout } from "../components/AuthLayout";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-
-
-const EyeIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
+import { EyeIcon } from "@/components/ui/EyeIcon";
+import { useState } from "react";
 
 export default function RegisterPage() {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+
   return (
     <AuthLayout>
       <div className="flex flex-col gap-6">
@@ -40,20 +37,24 @@ export default function RegisterPage() {
           
           <Input 
             id="password"
-            type="password"
+            type={isPasswordVisible ? "text" : "password"}
             label="Password"
             placeholder="Enter a password (min. 8 characters)"
             required
-            rightIcon={<EyeIcon />}
+            rightIcon={<EyeIcon isVisible={isPasswordVisible} />}
+            rightIconLabel={isPasswordVisible ? "Hide password" : "Show password"}
+            onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
 
           <Input 
             id="confirm-password"
-            type="password"
+            type={isConfirmPasswordVisible ? "text" : "password"}
             label="Confirm password"
             placeholder="Confirm your password"
             required
-            rightIcon={<EyeIcon />}
+            rightIcon={<EyeIcon isVisible={isConfirmPasswordVisible} />}
+            rightIconLabel={isConfirmPasswordVisible ? "Hide confirm password" : "Show confirm password"}
+            onRightIconClick={() => setIsConfirmPasswordVisible((isVisible) => !isVisible)}
           />
 
           <div className="flex items-center gap-2 mt-1">

@@ -1,15 +1,13 @@
 import { AuthLayout } from "@/components/AuthLayout";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { EyeIcon } from "@/components/ui/EyeIcon";
+import { useState } from "react";
 
-const EyeIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
 
 export default function LoginPage() {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
   return (
     <AuthLayout>
       <div className="flex flex-col gap-6">
@@ -31,11 +29,13 @@ export default function LoginPage() {
           
           <Input 
             id="password"
-            type="password"
+            type={isPasswordVisible ? "text" : "password"}
             label="Password"
             placeholder="Enter your password"
             required
-            rightIcon={<EyeIcon />}
+            rightIcon={<EyeIcon isVisible={isPasswordVisible} />}
+            rightIconLabel={isPasswordVisible ? "Hide password" : "Show password"}
+            onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
 
           <Button type="button" className="mt-2">

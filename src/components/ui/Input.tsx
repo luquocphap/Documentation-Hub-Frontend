@@ -5,9 +5,19 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   required?: boolean;
   rightIcon?: ReactNode;
+  rightIconLabel?: string;
+  onRightIconClick?: () => void;
 }
 
-export const Input: React.FC<InputProps> = ({ label, required, rightIcon, id, ...props }) => {
+export const Input: React.FC<InputProps> = ({
+  label,
+  required,
+  rightIcon,
+  rightIconLabel,
+  onRightIconClick,
+  id,
+  ...props
+}) => {
   return (
     <div className="flex flex-col gap-1.5 w-full">
       <label htmlFor={id} className="text-sm font-medium text-foreground">
@@ -16,13 +26,20 @@ export const Input: React.FC<InputProps> = ({ label, required, rightIcon, id, ..
       <div className="relative">
         <input
           id={id}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-primary-cyan focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          className={`w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-primary-cyan focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
+            rightIcon ? "pr-10" : ""
+          }`}
           {...props}
         />
         {rightIcon && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-cyan cursor-pointer">
+          <button
+            type="button"
+            aria-label={rightIconLabel}
+            onClick={onRightIconClick}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-cyan transition-colors hover:text-foreground focus:outline-none"
+          >
             {rightIcon}
-          </div>
+          </button>
         )}
       </div>
     </div>
