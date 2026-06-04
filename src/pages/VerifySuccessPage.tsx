@@ -15,34 +15,6 @@ interface VerifySuccessPageProps {
   redirectTo?: string;
 }
 
-
-const STATUS_CONTENT: Record<
-  Exclude<Status, "loading">,
-  { icon: React.ReactNode; color: string; title: string; desc: string; action?: string }
-> = {
-  success: {
-    icon: <CheckCircle />,
-    color: "text-foreground",
-    title: "Email verified successfully",
-    desc: "Your account is now active. You can sign in and start using Folio.",
-    action: "Go to sign in",
-  },
-  expired: {
-    icon: <XCircle />,
-    color: "text-primary-cyan",
-    title: "Link has expired",
-    desc: "This verification link is no longer valid. Request a new one and we'll send it right away.",
-    action: "Resend verification link",
-  },
-  error: {
-    icon: <XCircle />,
-    color: "text-primary-cyan",
-    title: "Something went wrong",
-    desc: "This link may have already been used or is invalid. Try signing in — if your email is already verified, you're good to go.",
-    action: "Go to sign in",
-  },
-};
-
 async function defaultVerify(token: string): Promise<void> {
   const res = await authApi.verifyEmail(token);
   console.log({res})
@@ -75,20 +47,13 @@ export function VerifySuccessPage({
       });
   }, [token, onVerify]);
 
-//   const handleAction = () => {
-//     if (status === "expired") {
-//       navigate("/register");
-//     } else {
-//       navigate(redirectTo);
-//     }
-//   };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
-      <Header brandName="Folio" />
+      <Header brandName="Folio" showSearch={false} />
 
-      <main className="flex flex-col items-center justify-center min-h-[calc(100vh-52px)] px-6 py-12">
-        <div className="flex flex-col items-center text-center w-full max-w-[400px]">
+      <main className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
+        <div className="flex flex-col items-center text-center w-full max-w-100">
 
           {status === "loading" ? (
             <>

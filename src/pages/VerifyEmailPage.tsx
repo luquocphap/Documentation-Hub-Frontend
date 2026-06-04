@@ -13,6 +13,7 @@ export function VerifyEmailPage({
     <div className="min-h-screen bg-background text-foreground font-body">
       <Header
         brandName="Folio"
+        showSearch={false}
       />
 
       <VerifyNoti email={email} />
