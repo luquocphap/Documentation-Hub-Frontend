@@ -15,7 +15,7 @@ const VerifySuccess = () => {
         {/* 1. Hình ảnh 300x300 sát mép trên của thẻ div cha */}
         <div className="w-75 h-75 overflow-hidden shrink-0">
           <img 
-            src={hero} 
+            src={hero}
             alt="Verify Success Hero" 
             className="w-full h-full object-cover" 
           />

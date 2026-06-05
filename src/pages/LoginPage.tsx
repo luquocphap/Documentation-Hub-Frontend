@@ -7,6 +7,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 
 export default function LoginPage() {
@@ -18,6 +19,8 @@ export default function LoginPage() {
   const [generalError, setGeneralError] = useState<string>("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
   const validateForm = () => {
@@ -64,6 +67,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await authApi.login(formData);
+      login();
       navigate('/dashboard')
     } catch (error: any) {
       console.log({ error });
