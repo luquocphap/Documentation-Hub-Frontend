@@ -37,7 +37,7 @@ const VerifySuccess = () => {
           <Button 
             icon={<ArrowRight size={16} />}
             className="text-sm"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/dashboard")}
           >
             Go to Workspaces
           </Button>
