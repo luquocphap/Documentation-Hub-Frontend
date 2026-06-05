@@ -27,7 +27,7 @@ export const authApi = {
     },
 
     getInfo: (): Promise<ApiResponse<any>> => {
-        return axiosInstance.get('/auth/get-info');
+        return axiosInstance.get('/auth/user-info');
     },
 
     refreshToken: (): Promise<ApiResponse<any>> => {

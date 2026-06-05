@@ -4,6 +4,8 @@ import RegisterPage from './pages/RegisterPage'
 import LoginPage from './pages/LoginPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import VerifySuccessPage from './pages/VerifySuccessPage'
+import DashboardPage from './pages/DashboardPage'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
 
@@ -15,6 +17,11 @@ function App() {
         <Route path='/login' element={<LoginPage/>} />
         <Route path='/verify-email' element={<VerifyEmailPage />} />
         <Route path="/auth/verify-email" element={<VerifySuccessPage />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path='/dashboard' element={<DashboardPage />} />
+        </Route>
+        
       </Routes>
     </BrowserRouter>
   )
