@@ -6,6 +6,7 @@ import { authApi, type LoginInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 
 export default function LoginPage() {
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [generalError, setGeneralError] = useState<string>("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -62,7 +64,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await authApi.login(formData);
-      alert("Login thành công")
+      navigate('/dashboard')
     } catch (error: any) {
       console.log({ error });
       // Xử lý lỗi trả về từ Backend
