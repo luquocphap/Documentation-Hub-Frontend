@@ -1,9 +1,10 @@
 import { authApi } from "@/api/api";
 import Header from "@/components/ui/Header";
 import VerifySuccess from "@/components/VerifySuccess";
-import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 
 type Status = "loading" | "success" | "expired" | "error";
@@ -30,6 +31,7 @@ export function VerifySuccessPage({
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<Status>("loading");
 
+  const login = useAuthStore((s) => s.login);
   const token = searchParams.get("token");
 
   useEffect(() => {
@@ -41,7 +43,10 @@ export function VerifySuccessPage({
     const verify = onVerify ?? defaultVerify;
 
     verify(token)
-      .then(() => setStatus("success"))
+      .then(() => {
+        setStatus("success");
+        login();
+      })
       .catch((err: Error) => {
         setStatus(err.message === "expired" ? "expired" : "error");
       });

@@ -8,20 +8,18 @@ import DashboardPage from './pages/DashboardPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
-
   return (
     <BrowserRouter>
       <Routes>
         <Route path='/' element={<Navigate to='/register' replace />} />
-        <Route path='/register' element={<RegisterPage/>} />
-        <Route path='/login' element={<LoginPage/>} />
+        <Route path='/register' element={<RegisterPage />} />
+        <Route path='/login' element={<LoginPage />} />
         <Route path='/verify-email' element={<VerifyEmailPage />} />
         <Route path="/auth/verify-email" element={<VerifySuccessPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path='/dashboard' element={<DashboardPage />} />
         </Route>
-        
       </Routes>
     </BrowserRouter>
   )

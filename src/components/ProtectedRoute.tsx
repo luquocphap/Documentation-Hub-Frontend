@@ -1,21 +1,12 @@
-import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { authApi } from '@/api/api';
+import { useAuthStore } from '@/stores/useAuthStore';
 
-export const ProtectedRoute = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+export function ProtectedRoute() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  useEffect(() => {
-    // Gọi API lấy info để check session
-    authApi.getInfo()
-      .then(() => setIsAuthenticated(true))
-      .catch(() => setIsAuthenticated(false));
-  }, []);
-
-  if (isAuthenticated === null) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Nếu auth hợp lệ -> render các route con (Outlet), ngược lại đá về login
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
-};
+  return <Outlet />;
+}
