@@ -6,6 +6,7 @@ import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { CustomInput } from "@/components/CustomInput";
 
 type RegisterFormData = RegisterInput & {
   confirmPassword: string;
@@ -147,7 +148,7 @@ export default function RegisterPage() {
         )}
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-          <Input 
+          <CustomInput 
             id="fullName"
             type="text"
             label="Full name"
@@ -158,7 +159,7 @@ export default function RegisterPage() {
             required
           />
 
-          <Input 
+          <CustomInput 
             id="email"
             type="email"
             label="Email address"
@@ -169,7 +170,7 @@ export default function RegisterPage() {
             required
           />
           
-          <Input 
+          <CustomInput 
             id="password"
             type={isPasswordVisible ? "text" : "password"}
             label="Password"
@@ -178,12 +179,11 @@ export default function RegisterPage() {
             onChange={handleChange("password")}
             error={fieldErrors.password}
             required
-            rightIcon={isPasswordVisible ? <Eye /> : <EyeOff />}
-            rightIconLabel={isPasswordVisible ? "Hide password" : "Show password"}
+            rightIcon={isPasswordVisible ? <EyeOff size={12} /> : <Eye size={12} />}
             onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
 
-          <Input 
+          <CustomInput 
             id="confirm-password"
             type={isConfirmPasswordVisible ? "text" : "password"}
             label="Confirm password"
@@ -192,8 +192,7 @@ export default function RegisterPage() {
             onChange={handleChange("confirmPassword")}
             error={fieldErrors.confirmPassword}
             required
-            rightIcon={isPasswordVisible ? <Eye /> : <EyeOff />}
-            rightIconLabel={isConfirmPasswordVisible ? "Hide confirm password" : "Show confirm password"}
+            rightIcon={isConfirmPasswordVisible ? <EyeOff size={12} /> : <Eye size={12} />}
             onRightIconClick={() => setIsConfirmPasswordVisible((isVisible) => !isVisible)}
           />
 

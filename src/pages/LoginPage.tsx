@@ -7,6 +7,7 @@ import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { CustomInput } from "@/components/CustomInput";
 
 
 export default function LoginPage() {
@@ -98,7 +99,7 @@ export default function LoginPage() {
         )}
 
         <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-          <Input 
+          <CustomInput 
             id="email"
             type="email"
             label="Email address"
@@ -106,10 +107,11 @@ export default function LoginPage() {
             value={formData.email}
             onChange={handleChange("email")}
             error={fieldErrors.email}
+            className="py-1 px-2.5"
             required
           />
           
-          <Input 
+          <CustomInput 
             id="password"
             type={isPasswordVisible ? "text" : "password"}
             label="Password"
@@ -118,8 +120,7 @@ export default function LoginPage() {
             onChange={handleChange("password")}
             error={fieldErrors.password}
             required
-            rightIcon={isPasswordVisible ? <Eye size={12} /> : <EyeOff size={12} />}
-            rightIconLabel={isPasswordVisible ? "Hide password" : "Show password"}
+            rightIcon={isPasswordVisible ? <EyeOff size={12} /> : <Eye size={12} />}
             onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
 
