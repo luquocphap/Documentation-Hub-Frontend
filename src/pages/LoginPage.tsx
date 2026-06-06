@@ -1,11 +1,10 @@
 import { AuthLayout } from "@/components/AuthLayout";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { EyeIcon } from "@/components/ui/EyeIcon";
 import { authApi, type LoginInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -119,7 +118,7 @@ export default function LoginPage() {
             onChange={handleChange("password")}
             error={fieldErrors.password}
             required
-            rightIcon={<EyeIcon isVisible={isPasswordVisible} />}
+            rightIcon={isPasswordVisible ? <Eye size={12} /> : <EyeOff size={12} />}
             rightIconLabel={isPasswordVisible ? "Hide password" : "Show password"}
             onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
