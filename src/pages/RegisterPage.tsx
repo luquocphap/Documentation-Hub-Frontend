@@ -1,12 +1,11 @@
 import { AuthLayout } from "../components/AuthLayout";
 import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
-import { EyeIcon } from "@/components/ui/EyeIcon";
 import { authApi, type RegisterInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 type RegisterFormData = RegisterInput & {
   confirmPassword: string;
@@ -179,7 +178,7 @@ export default function RegisterPage() {
             onChange={handleChange("password")}
             error={fieldErrors.password}
             required
-            rightIcon={<EyeIcon isVisible={isPasswordVisible} />}
+            rightIcon={isPasswordVisible ? <Eye /> : <EyeOff />}
             rightIconLabel={isPasswordVisible ? "Hide password" : "Show password"}
             onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
@@ -193,7 +192,7 @@ export default function RegisterPage() {
             onChange={handleChange("confirmPassword")}
             error={fieldErrors.confirmPassword}
             required
-            rightIcon={<EyeIcon isVisible={isConfirmPasswordVisible} />}
+            rightIcon={isPasswordVisible ? <Eye /> : <EyeOff />}
             rightIconLabel={isConfirmPasswordVisible ? "Hide confirm password" : "Show confirm password"}
             onRightIconClick={() => setIsConfirmPasswordVisible((isVisible) => !isVisible)}
           />

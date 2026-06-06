@@ -1,12 +1,7 @@
-import React from 'react'
 import hero from "@/assets/images/verify-success-hero.png";
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 const VerifySuccess = () => {
-
-    const navigate = useNavigate();
-
   return (
     <main className="flex flex-col items-center justify-center min-h-[460px] bg-background">
       {/* Thẻ div cha điều hướng flex theo chiều dọc */}

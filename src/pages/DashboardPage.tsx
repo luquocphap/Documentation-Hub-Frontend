@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/ui/Header";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { workspaceApi, type WorkspaceItem } from "@/api/api";
 import { Plus } from "lucide-react";
 
