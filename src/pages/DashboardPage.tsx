@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/ui/Header";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { workspaceApi, type WorkspaceItem } from "@/api/api";
 import { Plus } from "lucide-react";
 
@@ -32,7 +32,12 @@ export default function DashboardPage() {
           <p className="text-sm text-primary-cyan">Create and manage your Workspaces</p>
         </div>
         <div className="flex-1 flex justify-end">
-          <Button icon={<Plus size={16} />}>Create Workspace</Button>
+          <Button
+            size="sm"
+            className="px-2.5 py-2 text-sm gap-1.5"
+          >
+            <Plus size={16} /> Create Workspace
+          </Button>
         </div>
       </div>
 

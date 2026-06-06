@@ -1,4 +1,7 @@
 import logo from "@/assets/images/logo.png";
+import { Bell, HelpCircle, Search } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
+import avatar from "@/assets/images/avatar.png";
 
 export interface HeaderUser {
   name: string;
@@ -54,18 +57,7 @@ export function Header({
         <div className="w-[85%] h-full flex items-center border-r border-gray-200 h-full">
             <div className="w-full px-6 flex items-center gap-2 relative">
               {/* Icon Tìm kiếm (16x16) */}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="text-gray-400 shrink-0"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <Search size={16} />
 
               {/* Thẻ Input */}
               <input
@@ -92,35 +84,28 @@ export function Header({
           
           {/* Icon Thông báo lồng trong thẻ 32x32, icon gốc 16x16 */}
           <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+            <Bell size={12} />
           </button>
 
           {/* Icon Question/Help lồng trong thẻ 32x32, icon gốc 16x16 */}
           <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
+            <HelpCircle size={12}/>
           </button>
 
           {/* Thẻ Avatar lồng trong thẻ kích thước 32x32 */}
-          <button onClick={onUserClick} className="w-8 h-8 rounded-full overflow-hidden focus:outline-none shrink-0">
-            {user?.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.name || "User Avatar"}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              // Fallback tạm thời nếu không có avatarUrl
-              <div className="w-full h-full bg-indigo-600 text-white flex items-center justify-center text-xs font-semibold">
-                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-              </div>
-            )}
+          <button onClick={onUserClick} className="w-8 h-8 rounded-md overflow-hidden focus:outline-none shrink-0">
+            <Avatar className="rounded-md">
+              <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+              <AvatarFallback
+                className="rounded-md"
+              >
+                <img 
+                  src={avatar} 
+                  alt="Default Avatar" 
+                  className="w-full h-full object-cover" 
+                />
+              </AvatarFallback>
+            </Avatar>
           </button>
 
         </div>
