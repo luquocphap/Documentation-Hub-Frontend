@@ -34,12 +34,10 @@ const VerifySuccess = () => {
 
         {/* 3. Thẻ ở dưới cùng chứa nút (Nút nằm sát mép trên của thẻ này nhờ pt-0 hoặc tự thân vị trí flex) */}
         <div className="w-full flex justify-center pt-0 shrink-0 mt-4">
-          <Button 
-            icon={<ArrowRight size={16} />}
-            className="text-sm"
-            onClick={() => navigate("/dashboard")}
+          <Button
+            className='px-2.5 py-2 gap-1.5'
           >
-            Go to Workspaces
+            Go to Workspaces <ArrowRight size={16}/>
           </Button>
         </div>
 

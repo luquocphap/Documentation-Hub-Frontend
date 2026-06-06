@@ -124,7 +124,7 @@ export default function LoginPage() {
             onRightIconClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
           />
 
-          <Button type="submit" className="mt-2" disabled={isSubmitting}>
+          <Button type="submit" className="mt-2 px-2.5 py-2 gap-1.5 text-sm" disabled={isSubmitting}>
             Sign in
           </Button>
         </form>
