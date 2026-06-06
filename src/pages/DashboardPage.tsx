@@ -1,23 +1,26 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Header from "@/components/ui/Header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { workspaceApi, type WorkspaceItem } from "@/api/api";
 import { Plus } from "lucide-react";
+import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
+import avatarIcon from "@/assets/images/avatar.png";
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fetchWorkspaces = useCallback(async () => {
+    try {
+      const res = await workspaceApi.getAll();
+      setWorkspaces(res.data);
+    } catch (error) {
+      console.error("Failed to fetch workspaces:", error);
+    }
+  }, []);
 
   // Lấy dữ liệu workspace khi mount component
   useEffect(() => {
-    const fetchWorkspaces = async () => {
-      try {
-        const res = await workspaceApi.getAll();
-        // Giả sử API trả về mảng trực tiếp trong data
-        setWorkspaces(res.data);
-      } catch (error) {
-        console.error("Failed to fetch workspaces:", error);
-      }
-    };
     fetchWorkspaces();
   }, []);
 
@@ -35,6 +38,7 @@ export default function DashboardPage() {
           <Button
             size="sm"
             className="px-2.5 py-2 text-sm gap-1.5"
+            onClick={() => setIsModalOpen(true)}
           >
             <Plus size={16} /> Create Workspace
           </Button>
@@ -69,12 +73,24 @@ export default function DashboardPage() {
                   <button className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-primary-cyan hover:bg-secondary transition-colors">
                     <Plus size={14} />
                   </button>
-                  <div className="flex -space-x-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-600 border-2 border-card"></div>
-                    <div className="w-7 h-7 rounded-full bg-purple-600 border-2 border-card"></div>
-                    <div className="w-7 h-7 rounded-full bg-pink-600 border-2 border-card"></div>
-                  </div>
-                  <span className="text-xs text-primary-cyan font-medium">+22</span>
+                  {ws.memberCount > 0 && (
+                    <div className="flex -space-x-2">
+                      {Array.from({ length: Math.min(ws.memberCount, 3) }).map((_, index) => (
+                        <img 
+                          key={index}
+                          src={avatarIcon} 
+                          alt="Member avatar" 
+                          className="w-7 h-7 rounded-full border-2 border-card object-cover bg-background"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  
+                  {
+                    ws.memberCount - 3 > 0 && (
+                      <span className="text-xs text-primary-cyan font-medium">+{ws.memberCount - 3}</span>
+                    )
+                  }
                 </div>
                 <span className="text-xs text-primary-cyan">{ws.memberCount} members</span>
               </div>
@@ -82,7 +98,10 @@ export default function DashboardPage() {
           ))}
 
           {/* Ô Create Workspace mặc định (luôn hiển thị) */}
-          <div className="h-48 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-secondary/50 transition-colors">
+          <div 
+            onClick={() => setIsModalOpen(true)}
+            className="h-48 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-secondary/50 transition-colors"
+          >
             <div className="w-8 h-8 rounded-md bg-secondary border border-border flex items-center justify-center text-primary-cyan">
               <Plus size={18} />
             </div>
@@ -94,6 +113,12 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      <CreateWorkspaceModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={fetchWorkspaces}
+      />
     </div>
   );
 }

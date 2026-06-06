@@ -1,5 +1,5 @@
 import hero from "@/assets/images/verify-success-hero.png";
-import { Button } from './ui/button';
+import { Button } from './ui/Button';
 import { ArrowRight } from 'lucide-react';
 const VerifySuccess = () => {
   return (

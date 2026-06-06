@@ -1,11 +1,10 @@
 import { AuthLayout } from "../components/AuthLayout";
-import { Input } from "../components/ui/Input";
 import { authApi, type RegisterInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { CustomInput } from "@/components/CustomInput";
 
 type RegisterFormData = RegisterInput & {
