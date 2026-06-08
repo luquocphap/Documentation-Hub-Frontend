@@ -162,13 +162,17 @@ export default function WorkspacePage() {
             </Button>
             
             {/* Các mục chỉ hiện tùy theo role */}
-            <Button variant="ghost" className="justify-start px-3 font-normal text-muted-foreground hover:text-foreground">
-                <Activity className="mr-2 w-4 h-4" /> Activity log
-            </Button>
-            
-            {"Admin" === "Admin" && (
+            {workspace?.userRole === "Admin" && (
                 <Button variant="ghost" className="justify-start px-3 font-normal text-muted-foreground hover:text-foreground">
-                <Settings className="mr-2 w-4 h-4" /> Settings
+                    <Activity className="mr-2 w-4 h-4" /> Activity log
+                </Button>
+            )}
+            {workspace?.userRole === "Admin" && (
+                <Button variant="ghost" 
+                    className="justify-start px-3 font-normal text-muted-foreground hover:text-foreground"
+                    onClick={() => navigate(`/workspaces/${workspaceId}/settings`)}
+                >
+                    <Settings className="mr-2 w-4 h-4" /> Settings
                 </Button>
             )}
             </nav>
