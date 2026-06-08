@@ -263,7 +263,7 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
                   <DropdownMenuItem className="p-2.5 cursor-pointer rounded-lg hover:bg-secondary" onClick={() => setRoleId(role._id)}>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-foreground">{role.name}</span>
-                      <span className="text-xs text-muted-foreground">{role.name}</span>
+                      <span className="text-xs text-muted-foreground">{role.description}</span>
                     </div>
                   </DropdownMenuItem>
                 ))}

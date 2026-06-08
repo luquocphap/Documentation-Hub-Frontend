@@ -178,6 +178,7 @@ export type IMemberCandidatesResponse = IMemberCandidateItem[];
 export interface IWorkspaceRole {
   _id: string;
   name: string;
+  description: string;
 }
 
 // Kiểu dữ liệu của mảng trả về (dùng khi call API)
