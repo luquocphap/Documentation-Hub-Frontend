@@ -93,7 +93,7 @@ export default function WorkspacePage() {
                                     <span className="text-xs font-semibold text-foreground truncate max-w-30">
                                         {workspace?.name}
                                     </span>
-                                    <span className="text-[11px] text-muted-foreground">{workspace?.name}</span>
+                                    <span className="text-[11px] text-muted-foreground">{workspace?.userRole}</span>
                                 </div>
                             </div>
                             <ChevronDown size={16} className="text-muted-foreground" />

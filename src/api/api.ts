@@ -110,6 +110,7 @@ export interface IWorkspaceDetailResponse {
   name: string;
   description: string | null;
   memberCount: number;
+  userRole: string;
   created_at: string;
   documents: IDocumentItem[];
 }
