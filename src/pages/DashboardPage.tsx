@@ -5,8 +5,10 @@ import { workspaceApi, type WorkspaceItem } from "@/api/api";
 import { Plus } from "lucide-react";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import avatarIcon from "@/assets/images/avatar.png";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -51,7 +53,10 @@ export default function DashboardPage() {
           
           {/* Render danh sách workspace */}
           {workspaces.map((ws) => (
-            <div key={ws._id} className="h-48 rounded-xl border border-border bg-card flex flex-col overflow-hidden shadow-sm">
+            <div key={ws._id}
+                onClick={() => navigate(`/workspaces/${ws._id}`)}
+                className="h-48 rounded-xl border border-border bg-card flex flex-col overflow-hidden shadow-sm cursor-pointer hover:shadow-md hover:border-primary-cyan/50 transition-all group"
+             >
               
               {/* Phần trên 2/3 */}
               <div className="flex-2 p-4 flex flex-col gap-3 border-b border-border">
