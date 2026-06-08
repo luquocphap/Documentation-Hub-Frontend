@@ -102,7 +102,7 @@ export default function WorkspacePage() {
                     <DropdownMenuContent className="w-80 p-2 rounded-xl shadow-lg">
                         
                         {/* Danh sách Workspace */}
-                        <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+                        <div className="flex flex-col gap-1 max-h-60 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             {workspaceList.map((ws) => {
                             const isActive = ws._id === workspaceId;
                             const role = ws.userRole; 
