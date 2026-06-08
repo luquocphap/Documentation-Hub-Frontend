@@ -61,7 +61,19 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     if (location.state?.isNewWorkspace && toastedKey.current !== location.key) {
-      toast.success("Workspace created successfully");
+      toast.success("Workspace created successfully", {
+        style: {
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
+        },
+        classNames: {
+          icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
+        }
+      });
 
       // Đánh dấu là phiên điều hướng này đã hiển thị thông báo
       toastedKey.current = location.key;
