@@ -77,15 +77,17 @@ export default function DashboardPage() {
               {/* Phần dưới 1/3 */}
               <div className="flex-1 p-4 flex items-center justify-between bg-card shrink-0">
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setInviteWorkspace(ws);
-                    }}
-                    className="relative z-10 w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-primary-cyan hover:bg-secondary hover:text-foreground transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
+                  {ws.userRole === "Admin" && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInviteWorkspace(ws);
+                      }}
+                      className="relative z-10 w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-primary-cyan hover:bg-secondary hover:text-foreground transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
                   {ws.memberCount > 0 && (
                     <div className="flex -space-x-2">
                       {Array.from({ length: Math.min(ws.memberCount, 3) }).map((_, index) => (
