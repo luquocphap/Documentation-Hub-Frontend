@@ -6,11 +6,13 @@ import { Plus } from "lucide-react";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import avatarIcon from "@/assets/images/avatar.png";
 import { useNavigate } from "react-router-dom";
+import { InviteMemberModal } from "@/components/InviteMemberModal";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inviteWorkspace, setInviteWorkspace] = useState<WorkspaceItem | null>(null);
 
   const fetchWorkspaces = useCallback(async () => {
     try {
@@ -75,7 +77,13 @@ export default function DashboardPage() {
               {/* Phần dưới 1/3 */}
               <div className="flex-1 p-4 flex items-center justify-between bg-card shrink-0">
                 <div className="flex items-center gap-2">
-                  <button className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-primary-cyan hover:bg-secondary transition-colors">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInviteWorkspace(ws);
+                    }}
+                    className="relative z-10 w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-primary-cyan hover:bg-secondary hover:text-foreground transition-colors"
+                  >
                     <Plus size={14} />
                   </button>
                   {ws.memberCount > 0 && (
@@ -123,6 +131,12 @@ export default function DashboardPage() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={fetchWorkspaces}
+      />
+
+      <InviteMemberModal 
+        isOpen={!!inviteWorkspace}
+        onClose={() => setInviteWorkspace(null)} 
+        workspace={inviteWorkspace} 
       />
     </div>
   );

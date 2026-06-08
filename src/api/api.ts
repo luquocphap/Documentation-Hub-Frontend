@@ -154,5 +154,31 @@ export const workspaceApi = {
 
     getById: (workspaceId: string): Promise<ApiResponse<IWorkspaceDetailResponse>> => {
         return axiosInstance.get(`/workspace/${workspaceId}`);
+    },
+
+    searchCandidate: (workspaceId?: string, keyword?: string, config?: import('axios').AxiosRequestConfig): Promise<ApiResponse<IMemberCandidateItem[]>> => {
+        return axiosInstance.get(`/workspace/${workspaceId}/member-candidates?email=${keyword}`, config);
+    },
+
+    getRoles: (): Promise<ApiResponse<IWorkspaceRolesResponse>> => {
+        return axiosInstance.get(`/workspace/roles`)
     }
 };
+
+export interface IMemberCandidateItem {
+  id: string;
+  email: string;
+  fullName: string;
+  isJoined: boolean;
+}
+
+// Kiểu dữ liệu mảng trả về khi call GET /workspaces/:workspaceId/member-candidates?email=...
+export type IMemberCandidatesResponse = IMemberCandidateItem[];
+
+export interface IWorkspaceRole {
+  _id: string;
+  name: string;
+}
+
+// Kiểu dữ liệu của mảng trả về (dùng khi call API)
+export type IWorkspaceRolesResponse = IWorkspaceRole[];
