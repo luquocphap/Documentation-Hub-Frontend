@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { workspaceApi } from "@/api/api";
 import { CircleAlert } from "lucide-react";
 import { CustomInput } from "./CustomInput";
+import { useNavigate } from "react-router-dom";
 
 interface CreateWorkspaceModalProps {
   isOpen: boolean;
@@ -17,12 +18,11 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
   const [description, setDescription] = useState("");
   const [backendError, setBackendError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Thêm state isTouched
-  const [isTouched, setIsTouched] = useState(false);
+  const navigate = useNavigate();
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   let nameError = "";
-  if (isTouched && name.trim().length === 0) {
+  if (hasInteracted && name.trim().length === 0) {
     nameError = "Workspace name is required.";
   } else if (name.length > 60) {
     nameError = "Workspace name must be 60 characters or fewer.";
@@ -38,12 +38,17 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
     setIsSubmitting(true);
     try {
-      await workspaceApi.create({ name: name.trim(), description: description.trim() });
+      const response = await workspaceApi.create({ name: name.trim(), description: description.trim() });
+      const newWorkspaceId = response.data._id;
       
       setName("");
       setDescription("");
       onSuccess();
       onClose();
+
+      navigate(`/workspaces/${newWorkspaceId}`, { 
+        state: { isNewWorkspace: true } 
+      });
     } catch (err: any) {
       // Chỉ hiện lỗi chung nếu server báo về (VD: "Tên đã tồn tại")
       setBackendError(err.response?.data?.message || "Failed to create workspace. Please try again.");
@@ -57,7 +62,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
       setName("");
       setDescription("");
       setBackendError("");
-      setIsTouched(false);
+      setHasInteracted(false);
       onClose();
     }
   };
@@ -86,17 +91,14 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
+                  setHasInteracted(true);
                   setBackendError(""); 
                 }}
-                onBlur={() => setIsTouched(true)}
+                onBlur={() => setHasInteracted(true)}
                 disabled={isSubmitting}
                 error={nameError}
                 required
               />
-              
-              <span className={`text-[11px] text-right mt-1 ${name.length > 60 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
-                {name.length}/60
-              </span>
             </div>
 
             <div className="flex flex-col gap-2">

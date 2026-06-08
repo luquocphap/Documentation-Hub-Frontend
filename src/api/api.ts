@@ -62,6 +62,10 @@ export interface InviteMemberInput {
     roleId: string;
 }
 
+export interface WorkspaceCreated {
+    _id: string;
+}
+
 // --- KẾT QUẢ CỦA GET /workspace (Hàm findAll aggregation) ---
 export interface WorkspaceItem {
     _id: string;
@@ -91,6 +95,25 @@ export interface SuccessMessageResponse {
     message: string;
 }
 
+export interface IDocumentItem {
+  _id: string;
+  workspaceId: string;
+  title: string;
+  createdBy: string;
+  updatedBy: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IWorkspaceDetailResponse {
+  _id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  created_at: string;
+  documents: IDocumentItem[];
+}
+
 export const workspaceApi = {
     /**
      * Lấy danh sách tất cả workspace mà user hiện tại là thành viên
@@ -102,7 +125,7 @@ export const workspaceApi = {
     /**
      * Tạo một workspace mới
      */
-    create: (data: CreateWorkspaceInput): Promise<ApiResponse<Boolean>> => {
+    create: (data: CreateWorkspaceInput): Promise<ApiResponse<WorkspaceCreated>> => {
         return axiosInstance.post('/workspace', data);
     },
 
@@ -126,5 +149,9 @@ export const workspaceApi = {
      */
     inviteMember: (workspaceId: string, data: InviteMemberInput): Promise<ApiResponse<SuccessMessageResponse>> => {
         return axiosInstance.post(`/workspace/${workspaceId}/invite`, data);
+    },
+
+    getById: (workspaceId: string): Promise<ApiResponse<IWorkspaceDetailResponse>> => {
+        return axiosInstance.get(`/workspace/${workspaceId}`);
     }
 };

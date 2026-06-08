@@ -43,18 +43,15 @@ export function Header({
   className = "",
 }: HeaderProps) {
   return (
-    <header className={`w-full h-16 bg-white border-b border-gray-200 flex items-center px-4 ${className}`}>
-      {/* KHỐI TRÁI: Logo + Brand (Chiếm đúng 20% chiều rộng) */}
-      <div className="w-1/5 flex items-center pl-2 border-r border-gray-200 h-full">
+    <header className={`w-full h-16 bg-white border-b border-gray-200 flex items-center ${className}`}>
+      <div className="w-64 flex items-center border-r border-gray-200 h-full py-2 px-4">
         <BrandLogo name={brandName} />
       </div>
 
-      {/* KHỐI PHẢI: Chứa Tìm kiếm và Tiện ích (Chiếm 80% chiều rộng còn lại) */}
       {showSearch && (
-        <div className="w-4/5 h-full flex items-center">
+        <div className="w-296 h-full flex items-center">
         
-        {/* Khối con trái: Thanh Search (Chiếm 85% của khối phải) */}
-        <div className="w-[85%] h-full flex items-center border-r border-gray-200 h-full">
+        <div className="w-252 h-full flex items-center border-r border-gray-200">
             <div className="w-full px-6 flex items-center gap-2 relative">
               {/* Icon Tìm kiếm (16x16) */}
               <Search size={16} />
@@ -80,7 +77,7 @@ export function Header({
         </div>
 
         {/* Khối con phải: Các Icon Thông báo, Trợ giúp, Avatar (Chiếm 15% còn lại) */}
-        <div className="w-[15%] h-full flex items-center justify-end gap-3 pr-2">
+        <div className="w-44 h-full flex items-center justify-end gap-3 px-7 py-4">
           
           {/* Icon Thông báo lồng trong thẻ 32x32, icon gốc 16x16 */}
           <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
