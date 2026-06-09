@@ -217,3 +217,94 @@ export const workspaceApi = {
     }
 };
 
+
+// --- TYPES / INTERFACES CHO DOCUMENT ---
+
+export interface CreateDocumentInput {
+  workspaceId: string;
+  title: string;
+}
+
+export interface UpdateDocumentInput {
+  title: string;
+}
+
+// Kết quả của GET /document?workspaceId=...
+export interface DocumentListItem {
+  id: string;
+  title: string;
+  ownerName: string;
+  updatedAt: string; 
+}
+
+// Kết quả trả về sau khi tạo mới hoặc cập nhật (DocumentModel đầy đủ)
+export interface DocumentDetail {
+  _id: string;
+  workspaceId: string;
+  title: string;
+  public_id: string;
+  createdBy: string;
+  updatedBy: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UploadDocumentResponse {
+  message: string;
+  public_id: string;
+}
+
+// --- DOCUMENT API ---
+
+export const documentApi = {
+  /**
+   * Lấy danh sách documents thuộc về một workspaceId
+   * Backend sẽ trả về mảng các đối tượng chứa: id, title, ownerName, updatedAt
+   */
+  getAll: (workspaceId: string): Promise<ApiResponse<DocumentListItem[]>> => {
+    return axiosInstance.get('/document', {
+      params: { workspaceId },
+    });
+  },
+
+  /**
+   * Tạo một tài liệu mới (lưu metadata vào DB trước)
+   * Người tạo sẽ tự động được gán quyền Owner
+   */
+  create: (data: CreateDocumentInput): Promise<ApiResponse<DocumentDetail>> => {
+    return axiosInstance.post('/document', data);
+  },
+
+  /**
+   * Upload file cho tài liệu (chỉ nhận PDF, tối đa 20MB)
+   * Gọi thông qua formData
+   */
+  uploadFile: (documentId: string, file: File): Promise<ApiResponse<UploadDocumentResponse>> => {
+    const formData = new FormData();
+    // Chú ý key 'file' phải khớp với FileInterceptor('file') ở backend
+    formData.append('file', file);
+
+    return axiosInstance.post(`/document/${documentId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Đổi tên tài liệu
+   */
+  update: (documentId: string, data: UpdateDocumentInput): Promise<ApiResponse<DocumentDetail>> => {
+    return axiosInstance.patch(`/document/${documentId}`, data);
+  },
+
+  /**
+   * Xóa mềm tài liệu
+   */
+  delete: (documentId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.delete(`/document/${documentId}`);
+  },
+};
