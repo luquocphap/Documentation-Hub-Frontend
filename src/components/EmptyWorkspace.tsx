@@ -4,15 +4,7 @@ import emptyIllustration from "@/assets/images/empty-folder.png";
 
 const EmptyWorkspace = () => {
   return (
-    <div className="p-7 flex flex-col flex-1">
-        {/* Header của Main Content */}
-        <div className="flex items-center justify-between w-full mb-8">
-            <h1 className="text-2xl font-bold text-foreground">All documents</h1>
-            <Button size="sm" className="gap-1.5 px-3">
-                <FileText className="w-4 h-4" /> Create document
-            </Button>
-        </div>
-
+    <div className="flex flex-col flex-1">
         <div className="w-full h-145 flex flex-col gap-8 mx-auto">
             
             {/* THẺ TRÊN: Khu vực upload (Dashed border) */}
