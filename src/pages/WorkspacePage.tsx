@@ -4,16 +4,21 @@ import {
   ArrowDown,
   ArrowUp,
   FileText,
-  MoreVertical, 
+  Link,
+  MoreVertical,
+  Pencil,
+  Trash2, 
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import avatarIcon from "@/assets/images/avatar.png";
-import { documentApi, workspaceApi, type DocumentListItem, type IWorkspaceDetailResponse, type WorkspaceItem } from "@/api/api";
+import { authApi, documentApi, workspaceApi, type DocumentListItem, type IWorkspaceDetailResponse, type WorkspaceItem } from "@/api/api";
 import Header from "@/components/ui/Header";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import { toast } from "sonner";
 import { WorkspaceSidebar } from "@/components/WorkspaceSidebar";
 import EmptyWorkspace from "@/components/EmptyWorkspace";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function WorkspacePage() {
   const location = useLocation();
@@ -28,18 +33,25 @@ export default function WorkspacePage() {
   const toastedKey = useRef<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
 
+  const [currentUser, setCurrentUser] = useState<any>(null); 
+  const [docToDelete, setDocToDelete] = useState<DocumentListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     const fetchWorkspaceDetails = async () => {
       if (!workspaceId) return;
       setIsLoading(true);
       try {
-        const [workspaceRes, documentsRes] = await Promise.all([
+        // Gọi thêm authApi.getInfo() cùng lúc
+        const [workspaceRes, documentsRes, userRes] = await Promise.all([
           workspaceApi.getById(workspaceId),
-          documentApi.getAll(workspaceId)
+          documentApi.getAll(workspaceId),
+          authApi.getInfo()
         ]);
         
         setWorkspace(workspaceRes.data);
         setDocuments(documentsRes.data);
+        setCurrentUser(userRes.data);
       } catch (error) {
         console.error("Failed to fetch workspace data:", error);
       } finally {
@@ -84,6 +96,42 @@ export default function WorkspacePage() {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
+
+  const handleDeleteDocument = async () => {
+    if (!docToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await documentApi.delete(docToDelete.id);
+      
+      // Xóa thành công thì loại khỏi mảng state hiện tại
+      setDocuments(prev => prev.filter(doc => doc.id !== docToDelete.id));
+      
+      toast.success("Document removed successfully", {
+        style: {
+          width: '300px',
+          height: '52px',
+          borderRadius: 'var(--radius-md, 6px)',
+          border: '1px solid var(--base-border, #E5E5E5)',
+          padding: '16px',
+          gap: '8px',
+          background: 'var(--base-popover, #FFFFFF)',
+          boxShadow: '0px 4px 12px -1px rgba(0, 0, 0, 0.1)',
+          color: 'hsl(var(--foreground))',
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontSize: '14px',
+          fontWeight: 500,
+        },
+        classNames: { icon: 'text-black [&>svg]:fill-black [&>svg]:text-white [&>svg]:w-5 [&>svg]:h-5' } 
+      });
+      setDocToDelete(null); // Đóng modal
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete document.");
+      console.error("Delete document error:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const sortedDocuments = [...documents].sort((a, b) => {
     const dateA = new Date(a.updatedAt).getTime();
@@ -182,9 +230,50 @@ export default function WorkspacePage() {
 
                       {/* Column 4: Actions */}
                       <div className="w-21.75 shrink-0 flex items-center justify-end">
-                        <button className="p-2 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors outline-none">
-                          <MoreVertical size={16} />
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors outline-none">
+                              <MoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg p-1">
+                            
+                            {/* Nút Open File - Ai cũng thấy */}
+                            <DropdownMenuItem 
+                              className="p-2 cursor-pointer rounded-lg text-sm font-medium" 
+                              onClick={() => toast.info("Open file logic coming soon")}
+                            >
+                              <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> Open file
+                            </DropdownMenuItem>
+
+                            {/* Chỉ hiển thị các nút thao tác khác nếu User là Owner */}
+                            {doc.ownerId === currentUser?.id && (
+                              <>
+                                <DropdownMenuItem 
+                                  className="p-2 cursor-pointer rounded-lg text-sm font-medium"
+                                  onClick={() => toast.info("Rename logic coming soon")}
+                                >
+                                  <Pencil className="w-4 h-4 mr-2 text-muted-foreground" /> Rename
+                                </DropdownMenuItem>
+                                
+                                <DropdownMenuItem 
+                                  className="p-2 cursor-pointer rounded-lg text-sm font-medium"
+                                  onClick={() => toast.info("Share logic coming soon")}
+                                >
+                                  <Link className="w-4 h-4 mr-2 text-muted-foreground" /> Share
+                                </DropdownMenuItem>
+                                
+                                <DropdownMenuItem 
+                                  className="p-2 cursor-pointer rounded-lg text-sm font-medium text-red-600 focus:text-red-600 focus:bg-red-50 transition-colors"
+                                  onClick={() => setDocToDelete(doc)} // Mở modal xóa
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2 text-red-600" /> Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       
                     </div>
@@ -212,6 +301,47 @@ export default function WorkspacePage() {
           fetchWorkspaceList();
         }} 
       />
+
+      {/* Delete Document Dialog */}
+      <Dialog open={!!docToDelete} onOpenChange={(open) => !open && !isDeleting && setDocToDelete(null)}>
+        <DialogContent 
+          showCloseButton={false} 
+          className="flex flex-col w-[384px] max-w-[384px] min-h-41.5 bg-white border border-[#E5E5E5] rounded-[14px] p-0 overflow-hidden"
+        >
+          <div className="flex-1 px-6 pt-6 pb-4 flex flex-row gap-4 items-start w-full">
+            <div className="p-4 rounded-md bg-red-100 flex items-center justify-center self-start">
+              <Trash2 className="w-6 h-6 text-[#DC2626] block" />
+            </div>
+            
+            <DialogHeader className="text-left flex-1 gap-1 p-0">
+              <DialogTitle className="text-[18px] font-semibold text-foreground">
+                Delete document?
+              </DialogTitle>
+              <DialogDescription className="text-[14px] leading-5 text-muted-foreground">
+                This permanently deletes the document, including all comments and shared access.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          
+          <div className="px-6 py-4 flex items-center justify-end gap-2 bg-gray-50/50 border-t border-border mt-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => setDocToDelete(null)}
+              disabled={isDeleting}
+              className="bg-white"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteDocument}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

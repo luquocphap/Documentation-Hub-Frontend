@@ -234,6 +234,7 @@ export interface DocumentListItem {
   id: string;
   title: string;
   ownerName: string;
+  ownerId: string;
   updatedAt: string; 
 }
 
@@ -255,6 +256,10 @@ export interface DocumentDetail {
 export interface UploadDocumentResponse {
   message: string;
   public_id: string;
+}
+
+export interface MyDocumentRoleResponse {
+  role: string;
 }
 
 // --- DOCUMENT API ---
@@ -306,5 +311,13 @@ export const documentApi = {
    */
   delete: (documentId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
     return axiosInstance.delete(`/document/${documentId}`);
+  },
+
+  /**
+   * Lấy vai trò của user hiện hành đối với một tài liệu
+   * Kết quả trả về chứa: { role: 'Owner' | 'Editor' | 'Viewer' | 'Commenter' }
+   */
+  getMyRole: (documentId: string): Promise<ApiResponse<MyDocumentRoleResponse>> => {
+    return axiosInstance.get(`/document/${documentId}/my-role`);
   },
 };
