@@ -62,6 +62,10 @@ export interface InviteMemberInput {
     roleId: string;
 }
 
+export interface WorkspaceCreated {
+    _id: string;
+}
+
 // --- KẾT QUẢ CỦA GET /workspace (Hàm findAll aggregation) ---
 export interface WorkspaceItem {
     _id: string;
@@ -91,6 +95,66 @@ export interface SuccessMessageResponse {
     message: string;
 }
 
+export interface IDocumentItem {
+  _id: string;
+  workspaceId: string;
+  title: string;
+  createdBy: string;
+  updatedBy: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IWorkspaceDetailResponse {
+  _id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  userRole: string;
+  created_at: string;
+  documents: IDocumentItem[];
+}
+
+export interface IMemberCandidateItem {
+  id: string;
+  email: string;
+  fullName: string;
+  isJoined: boolean;
+}
+
+// Kiểu dữ liệu mảng trả về khi call GET /workspaces/:workspaceId/member-candidates?email=...
+export type IMemberCandidatesResponse = IMemberCandidateItem[];
+
+export interface IWorkspaceRole {
+  _id: string;
+  name: string;
+  description: string;
+}
+
+// Kiểu dữ liệu của mảng trả về (dùng khi call API)
+export type IWorkspaceRolesResponse = IWorkspaceRole[];
+
+export interface IWorkspaceMemberItem {
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  roleId: string;
+  joinedAt: string;
+}
+
+// Kiểu trả về khi gọi: GET /workspaces/:workspaceId/members
+export type IWorkspaceMembersResponse = IWorkspaceMemberItem[];
+
+export interface IChangeRolePayload {
+  userId: string;
+  roleId: string;
+}
+
+export interface IChangeRoleResponse {
+  message: string;
+}
+
 export const workspaceApi = {
     /**
      * Lấy danh sách tất cả workspace mà user hiện tại là thành viên
@@ -102,7 +166,7 @@ export const workspaceApi = {
     /**
      * Tạo một workspace mới
      */
-    create: (data: CreateWorkspaceInput): Promise<ApiResponse<Boolean>> => {
+    create: (data: CreateWorkspaceInput): Promise<ApiResponse<WorkspaceCreated>> => {
         return axiosInstance.post('/workspace', data);
     },
 
@@ -126,5 +190,121 @@ export const workspaceApi = {
      */
     inviteMember: (workspaceId: string, data: InviteMemberInput): Promise<ApiResponse<SuccessMessageResponse>> => {
         return axiosInstance.post(`/workspace/${workspaceId}/invite`, data);
+    },
+
+    getById: (workspaceId: string): Promise<ApiResponse<IWorkspaceDetailResponse>> => {
+        return axiosInstance.get(`/workspace/${workspaceId}`);
+    },
+
+    searchCandidate: (workspaceId?: string, keyword?: string, config?: import('axios').AxiosRequestConfig): Promise<ApiResponse<IMemberCandidateItem[]>> => {
+        return axiosInstance.get(`/workspace/${workspaceId}/member-candidates?email=${keyword}`, config);
+    },
+
+    getRoles: (): Promise<ApiResponse<IWorkspaceRolesResponse>> => {
+        return axiosInstance.get(`/workspace/roles`)
+    },
+
+    getMembers: (workspaceId: string): Promise<ApiResponse<IWorkspaceMembersResponse>> => {
+        return axiosInstance.get(`/workspace/${workspaceId}/members`);
+    },
+
+    changeMemberRole: (workspaceId: string, data: IChangeRolePayload): Promise<ApiResponse<IChangeRoleResponse>> => {
+        return axiosInstance.post(`/workspace/${workspaceId}/change-role`, data);
+    },
+
+    deleteMember: (workspaceId: string, userId: string): Promise<ApiResponse<string>> => {
+        return axiosInstance.delete(`/workspace/${workspaceId}/members/${userId}`);
     }
+};
+
+
+// --- TYPES / INTERFACES CHO DOCUMENT ---
+
+export interface CreateDocumentInput {
+  workspaceId: string;
+  title: string;
+}
+
+export interface UpdateDocumentInput {
+  title: string;
+}
+
+// Kết quả của GET /document?workspaceId=...
+export interface DocumentListItem {
+  id: string;
+  title: string;
+  ownerName: string;
+  updatedAt: string; 
+}
+
+// Kết quả trả về sau khi tạo mới hoặc cập nhật (DocumentModel đầy đủ)
+export interface DocumentDetail {
+  _id: string;
+  workspaceId: string;
+  title: string;
+  public_id: string;
+  createdBy: string;
+  updatedBy: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UploadDocumentResponse {
+  message: string;
+  public_id: string;
+}
+
+// --- DOCUMENT API ---
+
+export const documentApi = {
+  /**
+   * Lấy danh sách documents thuộc về một workspaceId
+   * Backend sẽ trả về mảng các đối tượng chứa: id, title, ownerName, updatedAt
+   */
+  getAll: (workspaceId: string): Promise<ApiResponse<DocumentListItem[]>> => {
+    return axiosInstance.get('/document', {
+      params: { workspaceId },
+    });
+  },
+
+  /**
+   * Tạo một tài liệu mới (lưu metadata vào DB trước)
+   * Người tạo sẽ tự động được gán quyền Owner
+   */
+  create: (data: CreateDocumentInput): Promise<ApiResponse<DocumentDetail>> => {
+    return axiosInstance.post('/document', data);
+  },
+
+  /**
+   * Upload file cho tài liệu (chỉ nhận PDF, tối đa 20MB)
+   * Gọi thông qua formData
+   */
+  uploadFile: (documentId: string, file: File): Promise<ApiResponse<UploadDocumentResponse>> => {
+    const formData = new FormData();
+    // Chú ý key 'file' phải khớp với FileInterceptor('file') ở backend
+    formData.append('file', file);
+
+    return axiosInstance.post(`/document/${documentId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Đổi tên tài liệu
+   */
+  update: (documentId: string, data: UpdateDocumentInput): Promise<ApiResponse<DocumentDetail>> => {
+    return axiosInstance.patch(`/document/${documentId}`, data);
+  },
+
+  /**
+   * Xóa mềm tài liệu
+   */
+  delete: (documentId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.delete(`/document/${documentId}`);
+  },
 };

@@ -1,6 +1,5 @@
 import { AuthLayout } from "@/components/AuthLayout";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { authApi, type LoginInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";

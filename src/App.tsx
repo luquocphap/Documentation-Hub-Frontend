@@ -6,6 +6,10 @@ import VerifyEmailPage from './pages/VerifyEmailPage'
 import VerifySuccessPage from './pages/VerifySuccessPage'
 import DashboardPage from './pages/DashboardPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import WorkspacePage from './pages/WorkspacePage'
+import { Toaster } from './components/ui/sonner'
+import WorkspaceSettingsPage from './pages/WorkspaceSettingPage'
+import WorkspaceMembersPage from './pages/WorkspaceMembersPage'
 
 function App() {
   return (
@@ -19,8 +23,13 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path='/dashboard' element={<DashboardPage />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
+          <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
+          <Route path="/workspaces/:workspaceId/members" element={<WorkspaceMembersPage />} />
         </Route>
       </Routes>
+
+      <Toaster position="top-right" richColors />
     </BrowserRouter>
   )
 }

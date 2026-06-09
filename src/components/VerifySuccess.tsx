@@ -1,7 +1,9 @@
 import hero from "@/assets/images/verify-success-hero.png";
-import { Button } from './ui/button';
+import { Button } from './ui/Button';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 const VerifySuccess = () => {
+  const navigate = useNavigate();
   return (
     <main className="flex flex-col items-center justify-center min-h-[460px] bg-background">
       {/* Thẻ div cha điều hướng flex theo chiều dọc */}
@@ -30,6 +32,7 @@ const VerifySuccess = () => {
         {/* 3. Thẻ ở dưới cùng chứa nút (Nút nằm sát mép trên của thẻ này nhờ pt-0 hoặc tự thân vị trí flex) */}
         <div className="w-full flex justify-center pt-0 shrink-0 mt-4">
           <Button
+            onClick={() => navigate("/dashboard")}
             className='px-2.5 py-2 gap-1.5'
           >
             Go to Workspaces <ArrowRight size={16}/>
