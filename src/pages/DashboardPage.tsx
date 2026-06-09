@@ -138,7 +138,7 @@ export default function DashboardPage() {
       <InviteMemberModal 
         isOpen={!!inviteWorkspace}
         onClose={() => setInviteWorkspace(null)} 
-        workspace={inviteWorkspace} 
+        workspace={inviteWorkspace}
       />
     </div>
   );

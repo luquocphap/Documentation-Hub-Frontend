@@ -4,13 +4,6 @@ import {
   FileText, Type, 
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import avatarIcon from "@/assets/images/avatar.png";
 import emptyIllustration from "@/assets/images/empty-folder.png";
 import { workspaceApi, type IWorkspaceDetailResponse, type WorkspaceItem } from "@/api/api";
 import Header from "@/components/ui/Header";

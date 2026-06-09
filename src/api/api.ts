@@ -115,6 +115,46 @@ export interface IWorkspaceDetailResponse {
   documents: IDocumentItem[];
 }
 
+export interface IMemberCandidateItem {
+  id: string;
+  email: string;
+  fullName: string;
+  isJoined: boolean;
+}
+
+// Kiểu dữ liệu mảng trả về khi call GET /workspaces/:workspaceId/member-candidates?email=...
+export type IMemberCandidatesResponse = IMemberCandidateItem[];
+
+export interface IWorkspaceRole {
+  _id: string;
+  name: string;
+  description: string;
+}
+
+// Kiểu dữ liệu của mảng trả về (dùng khi call API)
+export type IWorkspaceRolesResponse = IWorkspaceRole[];
+
+export interface IWorkspaceMemberItem {
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  roleId: string;
+  joinedAt: string;
+}
+
+// Kiểu trả về khi gọi: GET /workspaces/:workspaceId/members
+export type IWorkspaceMembersResponse = IWorkspaceMemberItem[];
+
+export interface IChangeRolePayload {
+  userId: string;
+  roleId: string;
+}
+
+export interface IChangeRoleResponse {
+  message: string;
+}
+
 export const workspaceApi = {
     /**
      * Lấy danh sách tất cả workspace mà user hiện tại là thành viên
@@ -162,24 +202,18 @@ export const workspaceApi = {
 
     getRoles: (): Promise<ApiResponse<IWorkspaceRolesResponse>> => {
         return axiosInstance.get(`/workspace/roles`)
+    },
+
+    getMembers: (workspaceId: string): Promise<ApiResponse<IWorkspaceMembersResponse>> => {
+        return axiosInstance.get(`/workspace/${workspaceId}/members`);
+    },
+
+    changeMemberRole: (workspaceId: string, data: IChangeRolePayload): Promise<ApiResponse<IChangeRoleResponse>> => {
+        return axiosInstance.post(`/workspace/${workspaceId}/change-role`, data);
+    },
+
+    deleteMember: (workspaceId: string, userId: string): Promise<ApiResponse<string>> => {
+        return axiosInstance.delete(`/workspace/${workspaceId}/members/${userId}`);
     }
 };
 
-export interface IMemberCandidateItem {
-  id: string;
-  email: string;
-  fullName: string;
-  isJoined: boolean;
-}
-
-// Kiểu dữ liệu mảng trả về khi call GET /workspaces/:workspaceId/member-candidates?email=...
-export type IMemberCandidatesResponse = IMemberCandidateItem[];
-
-export interface IWorkspaceRole {
-  _id: string;
-  name: string;
-  description: string;
-}
-
-// Kiểu dữ liệu của mảng trả về (dùng khi call API)
-export type IWorkspaceRolesResponse = IWorkspaceRole[];

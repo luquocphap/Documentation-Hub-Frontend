@@ -69,7 +69,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px] p-0 gap-0 overflow-hidden bg-background">
+      <DialogContent className="sm:max-w-106.25 p-0 gap-0 overflow-hidden bg-background">
         <form onSubmit={handleSubmit} className="flex flex-col w-full">
           
           <DialogHeader className="px-6 py-4 border-b border-border">

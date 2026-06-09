@@ -128,7 +128,7 @@ export function WorkspaceSidebar({
           <FileText className="mr-2 w-4 h-4" /> Documents
         </Button>
         
-        <Button {...getButtonProps("members")}>
+        <Button {...getButtonProps("members")} onClick={() => navigate(`/workspaces/${workspaceId}/members`)}>
           <Users className="mr-2 w-4 h-4" /> Members
         </Button>
 

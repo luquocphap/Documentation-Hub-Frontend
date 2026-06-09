@@ -17,11 +17,9 @@ interface InviteMemberModalProps {
 export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberModalProps) {
   const [keyword, setKeyword] = useState("");
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [roleId, setRoleId] = useState<string>("");
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [roles, setRoles] = useState<IWorkspaceRolesResponse>([]);
-  const selectedRole = roles.find(
-    (role) => role._id === roleId
-  );
+  const [selectedRoleName, setSelectedRoleName] = useState<string>("");
   
   const [searchResults, setSearchResults] = useState<IMemberCandidateItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -65,6 +63,8 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
       try {
         const res = await workspaceApi.getRoles();
         setRoles(res.data);
+        setSelectedRoleId(res.data[0]?._id);
+        setSelectedRoleName(res.data[0]?.name);
       } catch (error) {
         console.log("Fail to fetch roles", error);
       }
@@ -78,7 +78,7 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
     if (isOpen) {
       setKeyword("");
       setSelectedEmails([]);
-      setRoleId("");
+      setSelectedRoleId("");
       setSearchResults([]);
     }
   }, [isOpen]);
@@ -112,7 +112,7 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
     try {
       await Promise.all(
         selectedEmails.map((email) => 
-          workspaceApi.inviteMember(workspace._id, { email, roleId: roleId })
+          workspaceApi.inviteMember(workspace._id, { email, roleId: selectedRoleId })
         )
       );
       toast.success("Invitation sent successfully", {
@@ -256,11 +256,16 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
             <label className="text-xs font-semibold text-foreground">Role</label>
             <DropdownMenu>
               <DropdownMenuTrigger className="w-full flex items-center justify-between px-3 h-10 border border-border rounded-lg text-sm bg-background hover:bg-secondary transition-colors outline-none font-medium">
-                {selectedRole?.name ?? roles[0].name} <ChevronDown size={16} className="text-muted-foreground" />
+                { selectedRoleName } <ChevronDown size={16} className="text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-94.25 p-1 rounded-xl shadow-lg">
                 {roles.map((role) => (
-                  <DropdownMenuItem className="p-2.5 cursor-pointer rounded-lg hover:bg-secondary" onClick={() => setRoleId(role._id)}>
+                  <DropdownMenuItem className="p-2.5 cursor-pointer rounded-lg hover:bg-secondary"
+                   onClick={() => {
+                    setSelectedRoleId(role._id)
+                    setSelectedRoleName(role.name)
+                  }}
+                  >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-foreground">{role.name}</span>
                       <span className="text-xs text-muted-foreground">{role.description}</span>
