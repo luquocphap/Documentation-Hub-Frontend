@@ -253,9 +253,14 @@ export interface DocumentDetail {
   updated_at: string;
 }
 
-export interface UploadDocumentResponse {
-  message: string;
-  public_id: string;
+export interface IUploadSignatureResponse {
+  timestamp: number;
+  signature: string;
+  cloudName: string;
+  apiKey: string;
+  folder: string;
+  context: string;
+  notification_url: string;
 }
 
 export interface MyDocumentRoleResponse {
@@ -284,19 +289,10 @@ export const documentApi = {
   },
 
   /**
-   * Upload file cho tài liệu (chỉ nhận PDF, tối đa 20MB)
-   * Gọi thông qua formData
+   * Lấy thông số chữ ký từ Backend
    */
-  uploadFile: (documentId: string, file: File): Promise<ApiResponse<UploadDocumentResponse>> => {
-    const formData = new FormData();
-    // Chú ý key 'file' phải khớp với FileInterceptor('file') ở backend
-    formData.append('file', file);
-
-    return axiosInstance.post(`/document/${documentId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  getUploadSignature: (documentId: string): Promise<ApiResponse<IUploadSignatureResponse>> => {
+    return axiosInstance.get(`/document/${documentId}/upload-signature`);
   },
 
   /**

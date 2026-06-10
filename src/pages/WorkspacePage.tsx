@@ -1,7 +1,7 @@
 // src/pages/WorkspacePage.tsx
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { FileText, Type, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { authApi, documentApi, workspaceApi, type DocumentListItem, type IWorkspaceDetailResponse, type WorkspaceItem } from "@/api/api";
 import Header from "@/components/ui/Header";
@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { WorkspaceSidebar } from "@/components/WorkspaceSidebar";
 import EmptyWorkspace from "@/components/EmptyWorkspace";
 import { DocumentList } from "@/components/documents/DocumentList";
+import { UploadProgressToast } from "@/components/documents/UploadProgressToast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function WorkspacePage() {
   const location = useLocation();
@@ -22,7 +24,46 @@ export default function WorkspacePage() {
 
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const toastedKey = useRef<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null); 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workspaceId) return;
+
+    // Validate size (20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File size exceeds 20MB limit.");
+      e.target.value = ""; // Xoá file đã chọn để được chọn lại
+      return;
+    }
+
+    // Bật Toast Progress ở góc phải bên dưới
+    toast.custom(
+      (t) => (
+        <UploadProgressToast
+          toastId={t}
+          workspaceId={workspaceId}
+          file={file}
+          onSuccess={async () => {
+            // Khi upload 100%, tự động fetch lại document list
+            try {
+              const res = await documentApi.getAll(workspaceId);
+              setDocuments(res.data);
+            } catch (err) {
+              console.log({err});
+              console.error(err);
+            }
+          }}
+        />
+      ),
+      { duration: 999999, position: 'bottom-right' }
+    );
+
+    // Xóa input value để mở file explorer với cùng 1 file 2 lần không bị lỗi
+    e.target.value = "";
+  };
 
   useEffect(() => {
     const fetchWorkspaceDetails = async () => {
@@ -107,9 +148,36 @@ export default function WorkspacePage() {
                 )}
               </div>
               
-              <Button size="sm" className="gap-1.5 px-3">
-                <FileText className="w-4 h-4" /> Create document
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-1.5 px-3 outline-none">
+                    <FileText className="w-4 h-4" /> Create document
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="p-1 rounded-xl shadow-lg min-w-48">
+                  <DropdownMenuItem 
+                    className="py-1 px-1.5 gap-1.5 flex items-center cursor-pointer rounded-md text-sm font-normal leading-normal whitespace-nowrap"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4 text-muted-foreground" /> <p>Upload PDF</p>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="py-1 px-1.5 gap-1.5 flex items-center cursor-pointer rounded-md text-sm font-normal leading-normal whitespace-nowrap"
+                    onClick={() => toast.info("New blank document coming soon")}
+                  >
+                    <Type className="w-4 h-4 text-muted-foreground" /> <p>New blank document</p>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Input File ẩn */}
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
             </div>
 
             {/* Render Empty State OR Document List */}

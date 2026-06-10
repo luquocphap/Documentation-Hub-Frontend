@@ -1,4 +1,4 @@
-import { FileText, Type } from "lucide-react"
+import { Type } from "lucide-react"
 import { Button } from "./ui/Button"
 import emptyIllustration from "@/assets/images/empty-folder.png";
 
