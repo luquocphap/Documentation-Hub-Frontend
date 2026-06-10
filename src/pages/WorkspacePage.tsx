@@ -12,6 +12,7 @@ import EmptyWorkspace from "@/components/EmptyWorkspace";
 import { DocumentList } from "@/components/documents/DocumentList";
 import { UploadProgressToast } from "@/components/documents/UploadProgressToast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CreateMarkdownDocumentModal } from "@/components/documents/CreateMarkdownDocumentModal";
 
 export default function WorkspacePage() {
   const location = useLocation();
@@ -21,6 +22,7 @@ export default function WorkspacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [workspaceList, setWorkspaceList] = useState<WorkspaceItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMdModalOpen, setIsMdModalOpen] = useState(false);
 
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const toastedKey = useRef<string | null>(null);
@@ -52,7 +54,6 @@ export default function WorkspacePage() {
               const res = await documentApi.getAll(workspaceId);
               setDocuments(res.data);
             } catch (err) {
-              console.log({err});
               console.error(err);
             }
           }}
@@ -163,7 +164,7 @@ export default function WorkspacePage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="py-1 px-1.5 gap-1.5 flex items-center cursor-pointer rounded-md text-sm font-normal leading-normal whitespace-nowrap"
-                    onClick={() => toast.info("New blank document coming soon")}
+                    onClick={() => setIsMdModalOpen(true)}
                   >
                     <Type className="w-4 h-4 text-muted-foreground" /> <p>New blank document</p>
                   </DropdownMenuItem>
@@ -207,6 +208,22 @@ export default function WorkspacePage() {
           }
         }} 
       />
+
+      {workspaceId && (
+        <CreateMarkdownDocumentModal 
+          isOpen={isMdModalOpen}
+          onClose={() => setIsMdModalOpen(false)}
+          workspaceId={workspaceId}
+          onSuccess={async () => {
+            try {
+              const res = await documentApi.getAll(workspaceId);
+              setDocuments(res.data);
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

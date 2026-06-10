@@ -267,6 +267,12 @@ export interface MyDocumentRoleResponse {
   role: string;
 }
 
+export interface CreateDocumentMarkdownInput {
+  workspaceId: string;
+  title: string;
+  markdownContent: string;
+}
+
 // --- DOCUMENT API ---
 
 export const documentApi = {
@@ -315,5 +321,13 @@ export const documentApi = {
    */
   getMyRole: (documentId: string): Promise<ApiResponse<MyDocumentRoleResponse>> => {
     return axiosInstance.get(`/document/${documentId}/my-role`);
+  },
+
+  /**
+   * Tạo một tài liệu PDF mới từ nội dung Markdown
+   * Backend sẽ tự render PDF và đẩy lên mây, trả về document chi tiết
+   */
+  createFromMarkdown: (data: CreateDocumentMarkdownInput): Promise<ApiResponse<DocumentDetail>> => {
+    return axiosInstance.post('/document/from-markdown', data);
   },
 };
