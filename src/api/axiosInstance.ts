@@ -50,9 +50,19 @@ axiosInstance.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+        if (error.response?.status === 401) {
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = '/401';
+            return Promise.reject(error);
+        }
+
+        if (error.response?.status === 404) {
+            window.location.href = '/404'; 
+            return Promise.reject(error);
+        }
+
         // Bắt lỗi 403 (jwt expired) và chưa từng thử refresh
         if (error.response?.status === 403 && !originalRequest._retry) {
-            console.log("refresh token")
             if (isRefreshing) {
                 // Nếu đang refresh, đưa các request khác vào hàng đợi
                 return new Promise(function (resolve, reject) {
@@ -84,7 +94,7 @@ axiosInstance.interceptors.response.use(
                 console.log("Lỗi refresh token")
                 processQueue(refreshError, null);
                 // Refresh token cũng hết hạn hoặc lỗi -> Force logout (Vì chỉ có role admin)
-                window.location.href = '/login';
+                window.location.href = '/403';
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;
