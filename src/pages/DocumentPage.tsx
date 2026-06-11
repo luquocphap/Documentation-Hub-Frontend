@@ -1,4 +1,3 @@
-// src/pages/DocumentPage.tsx
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/ui/Header";
@@ -9,8 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-// Import Component con
-import { DocumentViewer } from "@/components/documents/DocumentViewer";
+import { DocumentViewer, type DocumentViewerHandle } from "@/components/documents/DocumentViewer";
 
 declare global {
   interface Window {
@@ -22,7 +20,8 @@ export default function DocumentPage() {
   const { documentId } = useParams<{ documentId: string }>();
   const navigate = useNavigate();
 
-  const apryseInstanceRef = useRef<any>(null);
+  const viewerHandleRef = useRef<DocumentViewerHandle | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
   const [publicId, setPublicId] = useState("");
@@ -49,10 +48,9 @@ export default function DocumentPage() {
           console.warn("API failed, dùng mock data:", apiError);
           setTitle("Mock Document");
         }
-        
+
         setPublicId(fetchedPublicId);
         setUserRole(fetchedRole);
-
       } catch (error) {
         console.error("Lỗi:", error);
         toast.error("Không thể tải thông tin tài liệu");
@@ -64,13 +62,27 @@ export default function DocumentPage() {
     fetchDocumentData();
   }, [documentId]);
 
+  // Toggle content edit mode — gọi API trên handle từ DocumentViewer
+  const handleToggleEdit = () => {
+    const handle = viewerHandleRef.current;
+    if (!handle) return;
+
+    if (isEditMode) {
+      handle.endContentEdit();
+      setIsEditMode(false);
+    } else {
+      handle.startContentEdit();
+      setIsEditMode(true);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background font-sans overflow-hidden">
       <Header showSearch={false} />
 
       <main className="flex-1 w-full max-w-360 mx-auto pt-5 px-6 pb-5 flex flex-col gap-3 min-h-0">
 
-        {/* HEADER TOOLBAR GIỮ NGUYÊN CSS */}
+        {/* HEADER TOOLBAR — GIỮ NGUYÊN CSS */}
         <div className="w-full h-9 rounded-lg flex items-center justify-between shrink-0">
           <Button
             variant="ghost"
@@ -93,12 +105,29 @@ export default function DocumentPage() {
 
             <div className="flex items-center gap-1.5">
               {(userRole === "Owner" || userRole === "Editor") && (
-                <Button variant="ghost" size="sm" className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
-                  <Edit3 size={16} className="mr-1.5" /> Edit
+                // Edit button giờ có onClick toggle và đổi style khi active
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleToggleEdit}
+                  className={`px-2.5 py-2 text-sm font-medium border rounded-md transition-colors ${
+                    isEditMode
+                      ? "bg-secondary shadow-[0px_0px_0px_3px_var(--customoutline)] border-3 border-[#A3A3A380]"
+                      : "text-foreground border-[#E5E5E5]"
+                  }`}
+                  disabled={isEditMode}
+                >
+                  <Edit3 size={16} className="mr-1.5" />
+                  {isEditMode ? "Done" : "Edit"}
                 </Button>
               )}
               {(userRole === "Owner" || userRole === "Editor" || userRole === "Commenter") && (
-                <Button variant="ghost" size="sm" className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
+                <Button 
+                  variant="ghost"
+                  size="sm" 
+                  className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
+                  disabled={isEditMode}
+                >
                   <MessageSquare size={16} className="mr-1.5" /> Comment
                 </Button>
               )}
@@ -116,18 +145,21 @@ export default function DocumentPage() {
           </div>
         </div>
 
-        {/* NHÚNG COMPONENT DOCUMENT VIEWER */}
+        {/* DOCUMENT VIEWER */}
         {isLoadingMeta || !documentId ? (
           <div className="flex-1 w-full flex items-center justify-center rounded-xl border border-[#E5E5E5] bg-white shadow-sm min-h-0">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <DocumentViewer 
+          <DocumentViewer
             documentId={documentId}
             publicId={publicId}
             initialTitle={title}
             onTitleUpdate={setTitle}
-            onViewerInit={(instance) => { apryseInstanceRef.current = instance; }}
+            onViewerInit={(handle) => {
+              viewerHandleRef.current = handle;
+            }}
+            onSaveSuccess={() => setIsEditMode(false)}
           />
         )}
 
