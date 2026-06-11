@@ -13,6 +13,7 @@ import WorkspaceMembersPage from './pages/WorkspaceMembersPage'
 import UnauthenticatedPage from './pages/UnauthenticatedPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import NotFoundPage from './pages/NotFoundPage'
+import DocumentPage from './pages/DocumentPage'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
           <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
           <Route path="/workspaces/:workspaceId/members" element={<WorkspaceMembersPage />} />
+          <Route path="/document/:documentId" element={<DocumentPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

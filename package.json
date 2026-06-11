@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "copy-webviewer": "mkdir public\\lib\\webviewer && xcopy /E /I /Y node_modules\\@pdftron\\webviewer\\public\\* public\\lib\\webviewer\\",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -11,6 +12,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
+    "@pdftron/webviewer": "^11.13.0",
     "@radix-ui/react-slot": "^1.2.5",
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.16.1",

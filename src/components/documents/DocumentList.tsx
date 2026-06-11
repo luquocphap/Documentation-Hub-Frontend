@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DeleteDocumentModal } from "./DeleteDocumentModal";
 import { RenameDocumentModal } from "./RenameDocumentModal";
 import type { DocumentListItem } from "@/api/api";
+import { useNavigate } from "react-router-dom";
 
 interface DocumentListProps {
   documents: DocumentListItem[];
@@ -14,6 +15,7 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ documents, setDocuments, currentUser }: DocumentListProps) {
+  const navigate = useNavigate();
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
   
   const [docToDelete, setDocToDelete] = useState<DocumentListItem | null>(null);
@@ -79,7 +81,7 @@ export function DocumentList({ documents, setDocuments, currentUser }: DocumentL
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg p-1">
                   
-                  <DropdownMenuItem className="p-2 cursor-pointer rounded-lg text-sm font-medium" onClick={() => toast.info("Open file logic coming soon")}>
+                  <DropdownMenuItem className="p-2 cursor-pointer rounded-lg text-sm font-medium" onClick={() => navigate(`/document/${doc.id}`)}>
                     <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> Open file
                   </DropdownMenuItem>
 

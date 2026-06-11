@@ -263,14 +263,25 @@ export interface IUploadSignatureResponse {
   notification_url: string;
 }
 
+export type DocumentRole = 'Owner' | 'Editor' | 'Commenter' | 'Viewer' | null;
+
 export interface MyDocumentRoleResponse {
-  role: string;
+  role: DocumentRole;
 }
 
 export interface CreateDocumentMarkdownInput {
   workspaceId: string;
   title: string;
   markdownContent: string;
+}
+
+export interface IDocumentDetailResponse {
+  _id: string;
+  workspaceId: string;
+  title: string;
+  public_id: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // --- DOCUMENT API ---
@@ -329,5 +340,13 @@ export const documentApi = {
    */
   createFromMarkdown: (data: CreateDocumentMarkdownInput): Promise<ApiResponse<DocumentDetail>> => {
     return axiosInstance.post('/document/from-markdown', data);
+  },
+
+  /**
+   * Lấy thông tin chi tiết của một tài liệu theo ID
+   * Yêu cầu quyền VIEW trên DOCUMENT
+   */
+  getById: (documentId: string): Promise<ApiResponse<IDocumentDetailResponse>> => {
+    return axiosInstance.get(`/document/${documentId}`);
   },
 };
