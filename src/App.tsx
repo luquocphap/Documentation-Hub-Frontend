@@ -10,6 +10,10 @@ import WorkspacePage from './pages/WorkspacePage'
 import { Toaster } from './components/ui/sonner'
 import WorkspaceSettingsPage from './pages/WorkspaceSettingPage'
 import WorkspaceMembersPage from './pages/WorkspaceMembersPage'
+import UnauthenticatedPage from './pages/UnauthenticatedPage'
+import UnauthorizedPage from './pages/UnauthorizedPage'
+import NotFoundPage from './pages/NotFoundPage'
+import DocumentPage from './pages/DocumentPage'
 
 function App() {
   return (
@@ -20,15 +24,20 @@ function App() {
         <Route path='/login' element={<LoginPage />} />
         <Route path='/verify-email' element={<VerifyEmailPage />} />
         <Route path="/auth/verify-email" element={<VerifySuccessPage />} />
+        <Route path="/401" element={<UnauthenticatedPage />} />
+        <Route path="/403" element={<UnauthorizedPage />} />
+        <Route path="/404" element={<NotFoundPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path='/dashboard' element={<DashboardPage />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
           <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
           <Route path="/workspaces/:workspaceId/members" element={<WorkspaceMembersPage />} />
+          <Route path="/document/:documentId" element={<DocumentPage />} />
         </Route>
-      </Routes>
 
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
       <Toaster position="top-right" richColors />
     </BrowserRouter>
   )

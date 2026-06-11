@@ -234,6 +234,7 @@ export interface DocumentListItem {
   id: string;
   title: string;
   ownerName: string;
+  ownerId: string;
   updatedAt: string; 
 }
 
@@ -252,9 +253,35 @@ export interface DocumentDetail {
   updated_at: string;
 }
 
-export interface UploadDocumentResponse {
-  message: string;
-  public_id: string;
+export interface IUploadSignatureResponse {
+  timestamp: number;
+  signature: string;
+  cloudName: string;
+  apiKey: string;
+  folder: string;
+  context: string;
+  notification_url: string;
+}
+
+export type DocumentRole = 'Owner' | 'Editor' | 'Commenter' | 'Viewer' | null;
+
+export interface MyDocumentRoleResponse {
+  role: DocumentRole;
+}
+
+export interface CreateDocumentMarkdownInput {
+  workspaceId: string;
+  title: string;
+  markdownContent: string;
+}
+
+export interface IDocumentDetailResponse {
+  _id: string;
+  workspaceId: string;
+  title: string;
+  public_id: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // --- DOCUMENT API ---
@@ -279,19 +306,10 @@ export const documentApi = {
   },
 
   /**
-   * Upload file cho tài liệu (chỉ nhận PDF, tối đa 20MB)
-   * Gọi thông qua formData
+   * Lấy thông số chữ ký từ Backend
    */
-  uploadFile: (documentId: string, file: File): Promise<ApiResponse<UploadDocumentResponse>> => {
-    const formData = new FormData();
-    // Chú ý key 'file' phải khớp với FileInterceptor('file') ở backend
-    formData.append('file', file);
-
-    return axiosInstance.post(`/document/${documentId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  getUploadSignature: (documentId: string): Promise<ApiResponse<IUploadSignatureResponse>> => {
+    return axiosInstance.get(`/document/${documentId}/upload-signature`);
   },
 
   /**
@@ -306,5 +324,29 @@ export const documentApi = {
    */
   delete: (documentId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
     return axiosInstance.delete(`/document/${documentId}`);
+  },
+
+  /**
+   * Lấy vai trò của user hiện hành đối với một tài liệu
+   * Kết quả trả về chứa: { role: 'Owner' | 'Editor' | 'Viewer' | 'Commenter' }
+   */
+  getMyRole: (documentId: string): Promise<ApiResponse<MyDocumentRoleResponse>> => {
+    return axiosInstance.get(`/document/${documentId}/my-role`);
+  },
+
+  /**
+   * Tạo một tài liệu PDF mới từ nội dung Markdown
+   * Backend sẽ tự render PDF và đẩy lên mây, trả về document chi tiết
+   */
+  createFromMarkdown: (data: CreateDocumentMarkdownInput): Promise<ApiResponse<DocumentDetail>> => {
+    return axiosInstance.post('/document/from-markdown', data);
+  },
+
+  /**
+   * Lấy thông tin chi tiết của một tài liệu theo ID
+   * Yêu cầu quyền VIEW trên DOCUMENT
+   */
+  getById: (documentId: string): Promise<ApiResponse<IDocumentDetailResponse>> => {
+    return axiosInstance.get(`/document/${documentId}`);
   },
 };

@@ -118,7 +118,23 @@ export default function WorkspaceMembersPage() {
     // Xóa thành viên vừa chọn khỏi danh sách hiển thị trên UI ngay lập tức
     setMembers((prev) => prev.filter((m) => m.userId !== memberToRemove.userId));
     
-    toast.success("Member removed successfully");
+    toast.success("Member removed successfully", {
+        style: {
+          width: '300px',
+          height: '52px',
+          borderRadius: 'var(--radius-md, 6px)',
+          border: '1px solid var(--base-border, #E5E5E5)',
+          padding: '16px',
+          gap: '8px',
+          background: 'var(--base-popover, #FFFFFF)',
+          boxShadow: '0px 4px 12px -1px rgba(0, 0, 0, 0.1)',
+          color: 'hsl(var(--foreground))',
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontSize: '14px',
+          fontWeight: 500,
+        },
+        classNames: { icon: 'text-black [&>svg]:fill-black [&>svg]:text-white [&>svg]:w-5 [&>svg]:h-5' } 
+      });
     setMemberToRemove(null); // Đóng modal
   } catch (error: any) {
     toast.error(error.response?.data?.message || "Failed to remove member.");
