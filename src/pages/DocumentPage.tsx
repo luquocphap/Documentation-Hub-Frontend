@@ -141,6 +141,20 @@ export default function DocumentPage() {
     try {
       const res = await documentApi.update(documentId, { title: title.trim() });
       setTitle(res.data.title)
+
+      toast.success("Document renamed successfully", {
+        style: {
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
+        },
+        classNames: {
+          icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
+        }
+      });
     } catch (error) {
       toast.error("Failed to rename document.");
     } finally {

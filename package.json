@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "rm-webviewer": "rm -rf public/lib",
     "copy-webviewer": "mkdir public\\lib\\webviewer && xcopy /E /I /Y node_modules\\@pdftron\\webviewer\\public\\* public\\lib\\webviewer\\",
     "dev": "vite",
     "build": "tsc -b && vite build",
