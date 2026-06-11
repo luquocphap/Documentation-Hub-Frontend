@@ -102,13 +102,14 @@ export function CreateMarkdownDocumentModal({ isOpen, onClose, workspaceId, onSu
 
       toast.success("Document created successfully", {
         style: {
-          width: '300px', height: '52px', borderRadius: '6px',
-          border: '1px solid #E5E5E5', padding: '16px', gap: '8px',
-          background: '#FFFFFF', boxShadow: '0px 4px 12px -1px rgba(0, 0, 0, 0.10)',
-          color: 'hsl(var(--foreground))', fontFamily: 'var(--font-sans), sans-serif',
-          fontSize: '14px', fontWeight: 500,
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
         },
-        classNames: { icon: 'text-black [&>svg]:fill-black [&>svg]:text-white [&>svg]:w-5 [&>svg]:h-5' } 
+        classNames: { icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5' }
       });
 
       onSuccess();
