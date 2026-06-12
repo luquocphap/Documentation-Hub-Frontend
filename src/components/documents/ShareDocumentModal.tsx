@@ -15,6 +15,7 @@ import { authApi, documentApi, type IWorkspaceDetailResponse, workspaceApi } fro
 import { BuildingOfficeIcon } from "@phosphor-icons/react";
 import avatarIcon from "@/assets/images/avatar.png";
 import axios from "axios";
+import { APP_URL } from "@/lib/constant";
 
 export type ShareRole = string;
 
@@ -40,14 +41,6 @@ interface ShareDocumentModalProps {
   workspaceId: string;
   owner?: ShareDocumentOwner;
   externalAccess?: ShareAccessUser[];
-  shareLink?: string;
-}
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
 /** Dropdown chọn role — dùng chung cho ô thêm email và từng người trong danh sách */
@@ -128,7 +121,6 @@ export function ShareDocumentModal({
   documentId,
   workspaceId,
   externalAccess = [],
-  shareLink,
 }: ShareDocumentModalProps) {
   const [keyword, setKeyword] = useState("");
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
@@ -269,7 +261,19 @@ export function ShareDocumentModal({
         )
       );
 
-      toast.success("Invited successfully");
+      toast.success("Access updated successfully", {
+        style: {
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
+        },
+        classNames: {
+          icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
+        }
+      });
 
       // Cập nhật AccessList trên UI
       setAccessList((prev) => [
@@ -295,15 +299,26 @@ export function ShareDocumentModal({
   };
 
   const handleChangeRole = (id: string, role: ShareRole) => {
-    // TODO: gọi API đổi quyền khi backend sẵn sàng
     setAccessList((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
   };
 
   const handleCopyLink = async () => {
-    const link = shareLink || (typeof window !== "undefined" ? window.location.href : "");
+    const link = `${APP_URL}/document/${documentId}`;
     try {
       await navigator.clipboard.writeText(link);
-      toast.success("Link copied to clipboard");
+      toast.success("Link copied to clipboard", {
+        style: {
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
+        },
+        classNames: {
+          icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
+        }
+      });
     } catch {
       toast.error("Failed to copy link");
     }
