@@ -17,6 +17,22 @@ export class LoginInput {
     password!: string;
 }
 
+export interface IMemberCandidateItem {
+    id: string;
+    email: string;
+    fullName: string;
+    inWorkspace?: boolean;
+    inDocument?: boolean;
+}
+
+export type IMemberCandidatesResponse = IMemberCandidateItem[];
+
+export interface SearchCandidateParams{
+  keyword: string,
+  workspaceId?: string,
+  documentId?: string
+}
+
 export const authApi = {
     login: (data: LoginInput): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/login', data);
@@ -45,6 +61,13 @@ export const authApi = {
     logout: (): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/logout');
     },
+
+    searchCandidates: (
+    params: SearchCandidateParams, 
+    config?: import('axios').AxiosRequestConfig
+  ): Promise<ApiResponse<IMemberCandidatesResponse>> => {
+    return axiosInstance.get('/auth/search-candidates', { params, ...config });
+  }
 }
 
 export interface CreateWorkspaceInput {
@@ -115,16 +138,6 @@ export interface IWorkspaceDetailResponse {
   documents: IDocumentItem[];
 }
 
-export interface IMemberCandidateItem {
-  id: string;
-  email: string;
-  fullName: string;
-  isJoined: boolean;
-}
-
-// Kiểu dữ liệu mảng trả về khi call GET /workspaces/:workspaceId/member-candidates?email=...
-export type IMemberCandidatesResponse = IMemberCandidateItem[];
-
 export interface IWorkspaceRole {
   _id: string;
   name: string;
@@ -179,7 +192,6 @@ export const workspaceApi = {
 
     /**
      * Xóa mềm một workspace (yêu cầu quyền DELETE/WORKSPACE)
-     * Lưu ý: Tham số param backend đang định nghĩa là :id
      */
     delete: (workspaceId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
         return axiosInstance.delete(`/workspace/${workspaceId}`);
@@ -194,10 +206,6 @@ export const workspaceApi = {
 
     getById: (workspaceId: string): Promise<ApiResponse<IWorkspaceDetailResponse>> => {
         return axiosInstance.get(`/workspace/${workspaceId}`);
-    },
-
-    searchCandidate: (workspaceId?: string, keyword?: string, config?: import('axios').AxiosRequestConfig): Promise<ApiResponse<IMemberCandidateItem[]>> => {
-        return axiosInstance.get(`/workspace/${workspaceId}/member-candidates?email=${keyword}`, config);
     },
 
     getRoles: (): Promise<ApiResponse<IWorkspaceRolesResponse>> => {
@@ -216,7 +224,6 @@ export const workspaceApi = {
         return axiosInstance.delete(`/workspace/${workspaceId}/members/${userId}`);
     }
 };
-
 
 // --- TYPES / INTERFACES CHO DOCUMENT ---
 
@@ -284,6 +291,12 @@ export interface IDocumentDetailResponse {
   updatedAt: string;
 }
 
+export interface IDocumentRole {
+  _id: string;
+  name: string;
+  description: string;
+}
+
 // --- DOCUMENT API ---
 
 export const documentApi = {
@@ -349,4 +362,18 @@ export const documentApi = {
   getById: (documentId: string): Promise<ApiResponse<IDocumentDetailResponse>> => {
     return axiosInstance.get(`/document/${documentId}`);
   },
+
+  /**
+   * Lấy danh sách Roles của Document
+   */
+  getRoles: (): Promise<ApiResponse<IDocumentRole[]>> => { // Đã sửa lại thành IDocumentRole[] cho đúng mảng trả về
+    return axiosInstance.get(`/document/roles`)
+  },
+
+  /**
+   * Mời một thành viên mới vào Document thông qua email
+   */
+  inviteMember: (documentId: string, data: InviteMemberInput): Promise<ApiResponse<SuccessMessageResponse>> => {
+      return axiosInstance.post(`/document/${documentId}/invite`, data);
+  }
 };
