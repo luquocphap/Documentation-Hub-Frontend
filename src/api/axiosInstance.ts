@@ -99,9 +99,11 @@ axiosInstance.interceptors.response.use(
             } finally {
                 isRefreshing = false;
             }
+        } else {
+            window.location.href = '/403';
+            return Promise.reject(error);
         }
 
-        return Promise.reject(error);
     }
 );
 

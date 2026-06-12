@@ -2,24 +2,27 @@ import { useState } from "react";
 import { ArrowDown, ArrowUp, FileText, Link, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import avatarIcon from "@/assets/images/avatar.png";
-import { toast } from "sonner";
 import { DeleteDocumentModal } from "./DeleteDocumentModal";
 import { RenameDocumentModal } from "./RenameDocumentModal";
-import type { DocumentListItem } from "@/api/api";
-import { useNavigate } from "react-router-dom";
+import type { DocumentListItem, IWorkspaceDetailResponse } from "@/api/api";
+import { useNavigate, useParams } from "react-router-dom";
+import { ShareDocumentModal } from "./ShareDocumentModal";
 
 interface DocumentListProps {
   documents: DocumentListItem[];
   setDocuments: React.Dispatch<React.SetStateAction<DocumentListItem[]>>;
   currentUser: any;
+  workspace?: IWorkspaceDetailResponse | null;
 }
 
-export function DocumentList({ documents, setDocuments, currentUser }: DocumentListProps) {
+export function DocumentList({ documents, setDocuments, currentUser, workspace }: DocumentListProps) {
   const navigate = useNavigate();
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
+  const { workspaceId } = useParams();
   
   const [docToDelete, setDocToDelete] = useState<DocumentListItem | null>(null);
   const [docToRename, setDocToRename] = useState<DocumentListItem | null>(null);
+  const [docToShare, setDocToShare] = useState<DocumentListItem | null>(null);
 
   const sortedDocuments = [...documents].sort((a, b) => {
     const dateA = new Date(a.updatedAt).getTime();
@@ -96,7 +99,7 @@ export function DocumentList({ documents, setDocuments, currentUser }: DocumentL
                       
                       <DropdownMenuItem 
                         className="p-2 cursor-pointer rounded-lg text-sm font-medium"
-                        onClick={() => toast.info("Share logic coming soon")}
+                        onClick={() => setDocToShare(doc)}
                       >
                         <Link className="w-4 h-4 mr-2 text-muted-foreground" /> Share
                       </DropdownMenuItem>
@@ -129,6 +132,14 @@ export function DocumentList({ documents, setDocuments, currentUser }: DocumentL
         isOpen={!!docToRename} 
         onClose={() => setDocToRename(null)}
         onSuccess={(id, newTitle, updatedAt) => setDocuments(prev => prev.map(d => d.id === id ? { ...d, title: newTitle, updatedAt } : d))}
+      />
+
+      <ShareDocumentModal
+        isOpen={!!docToShare}
+        onClose={() => setDocToShare(null)}
+        documentId={docToShare?.id || ""}
+        documentTitle={docToShare?.title || ""}
+        workspaceId={workspaceId || ""}
       />
     </div>
   );

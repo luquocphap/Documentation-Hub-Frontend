@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/ui/Header";
-import { documentApi, type DocumentRole } from "@/api/api";
+import { documentApi, type DocumentListItem, type DocumentRole } from "@/api/api";
 import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Edit3, MessageSquare, Share2, Trash2, Info
@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/Button";
 
 import { DocumentViewer, type DocumentViewerHandle } from "@/components/documents/DocumentViewer";
+import { ShareDocumentModal } from "@/components/documents/ShareDocumentModal";
+import { DeleteDocumentModal } from "@/components/documents/DeleteDocumentModal";
 
 declare global {
   interface Window {
@@ -22,35 +24,36 @@ export default function DocumentPage() {
 
   const viewerHandleRef = useRef<DocumentViewerHandle | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string>("");
 
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
   const [publicId, setPublicId] = useState("");
   const [title, setTitle] = useState("Loading Document...");
   const [userRole, setUserRole] = useState<DocumentRole>(null);
 
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<DocumentListItem | null>(null);
+
   useEffect(() => {
     if (!documentId) return;
 
     const fetchDocumentData = async () => {
       try {
-        let fetchedPublicId = "sample_pdf";
-        let fetchedRole: DocumentRole = "Owner";
 
         try {
           const [docRes, roleRes] = await Promise.all([
             documentApi.getById(documentId),
-            documentApi.getMyRole(documentId)
+            documentApi.getMyRole(documentId),
           ]);
-          fetchedPublicId = docRes.data.public_id || "";
+          setPublicId(docRes.data.public_id || "");
           setTitle(docRes.data.title);
-          fetchedRole = roleRes.data.role;
+          setWorkspaceId(docRes.data.workspaceId);
+          setUserRole(roleRes.data.role);
         } catch (apiError) {
           console.warn("API failed, dùng mock data:", apiError);
           setTitle("Mock Document");
         }
 
-        setPublicId(fetchedPublicId);
-        setUserRole(fetchedRole);
       } catch (error) {
         console.error("Lỗi:", error);
         toast.error("Không thể tải thông tin tài liệu");
@@ -133,10 +136,19 @@ export default function DocumentPage() {
               )}
               {userRole === "Owner" && (
                 <>
-                  <Button variant="ghost" size="sm" className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
+                  <Button 
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
                     <Share2 size={16} className="mr-1.5" /> Share
                   </Button>
-                  <Button variant="ghost" size="sm" className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setDocToDelete({ id: documentId!, title: title, ownerName: "", ownerId: "", updatedAt: "" })}
+                    className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
+                  >
                     <Trash2 size={16} className="mr-1.5" /> Delete
                   </Button>
                 </>
@@ -164,6 +176,21 @@ export default function DocumentPage() {
         )}
 
       </main>
+
+      <ShareDocumentModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        documentId={documentId || ""}
+        documentTitle={title}
+        workspaceId={workspaceId}
+      />
+
+      <DeleteDocumentModal 
+        document={docToDelete} 
+        isOpen={!!docToDelete} 
+        onClose={() => setDocToDelete(null)} 
+        onSuccess={() => navigate(-1)} 
+      />
     </div>
   );
 }

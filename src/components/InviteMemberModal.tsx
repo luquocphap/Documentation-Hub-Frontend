@@ -1,7 +1,7 @@
 import { useState, useEffect, type KeyboardEvent } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
-import { workspaceApi, type WorkspaceItem, type IMemberCandidateItem, type IWorkspaceRolesResponse } from "@/api/api";
+import { workspaceApi, type WorkspaceItem, type IMemberCandidateItem, type IWorkspaceRolesResponse, authApi } from "@/api/api";
 import { toast } from "sonner";
 import { X, ChevronDown, Loader2 } from "lucide-react";
 import avatarIcon from "@/assets/images/avatar.png";
@@ -37,7 +37,10 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
     const controller = new AbortController();
 
     const timerId = setTimeout(() => {
-      workspaceApi.searchCandidate(workspace?._id, keyword, { signal: controller.signal })
+      authApi.searchCandidates(
+        { keyword: keyword, workspaceId: workspace?._id },
+        { signal: controller.signal }
+      )
         .then((res) => {
           setSearchResults(res.data);
         })
@@ -206,22 +209,22 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
                   <div
                     key={user.id}
                     className={`flex items-center gap-3 p-2 hover:bg-secondary cursor-pointer rounded-lg transition-colors ${
-                    user.isJoined 
+                    user.inWorkspace 
                         ? "cursor-default" 
                         : "hover:bg-secondary cursor-pointer"
                     }`}
                     onClick={() => {
-                        if (!user.isJoined) addEmail(user.email);
+                        if (!user.inWorkspace) addEmail(user.email);
                     }}
                   >
                     <img src={avatarIcon} className="w-8 h-8 rounded-full" alt="User Avatar" />
                     <div className="flex flex-col overflow-hidden">
                       <div className="flex items-center gap-2">
-                            <span className={`text-sm font-semibold truncate ${user.isJoined ? "text-muted-foreground" : "text-foreground"}`}>
+                            <span className={`text-sm font-semibold truncate ${user.inWorkspace ? "text-muted-foreground" : "text-foreground"}`}>
                                 {user.fullName}
                             </span>
                             
-                            {user.isJoined && (
+                            {user.inWorkspace && (
                                 <span className="bg-gray-100 text-muted-foreground text-[11px] px-2 py-0.5 rounded-full font-medium">
                                     Joined
                                 </span>
