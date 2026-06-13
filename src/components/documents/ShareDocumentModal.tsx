@@ -8,8 +8,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { X, ChevronDown, Loader2 } from "lucide-react";
+import { X, ChevronDown, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { authApi, documentApi, type IDocumentRole, type IExternalDocumentMemberItem, type IMemberCandidateItem, type IWorkspaceDetailResponse, workspaceApi } from "@/api/api";
 import { BuildingOfficeIcon } from "@phosphor-icons/react";
@@ -44,11 +45,13 @@ interface ShareDocumentModalProps {
 function RoleSelect({
   value,
   onChange,
+  onRemove,
   disabled = false,
   roleOptions = [],
 }: {
   value: ShareRole;
   onChange: (role: IDocumentRole) => void;
+  onRemove?: () => void;
   disabled?: boolean;
   roleOptions?: IDocumentRole[];
 }) {
@@ -84,6 +87,20 @@ function RoleSelect({
             </div>
           </DropdownMenuItem>
         ))}
+
+        {onRemove && (
+          <>
+            <DropdownMenuSeparator className="my-1" />
+            <DropdownMenuItem
+              onSelect={onRemove}
+              variant="destructive"
+              className="p-2.5 cursor-pointer rounded-lg bg-red-50 text-[#DC2626] focus:bg-red-50 focus:text-[#DC2626]"
+            >
+              <Trash2 size={14} />
+              <span className="text-sm font-medium">Remove</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -357,6 +374,36 @@ export function ShareDocumentModal({
     }
   };
 
+  const handleRemoveAccess = async (user: IExternalDocumentMemberItem) => {
+    const previousAccessList = accessList;
+    setUpdatingRoleUserIds((prev) => [...prev, user.userId]);
+
+    try {
+      await documentApi.deleteMemberRole(documentId, user.userId);
+
+      setAccessList((prev) => prev.filter((member) => member.userId !== user.userId));
+      toast.success("Access removed successfully", {
+        style: {
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
+        },
+        classNames: {
+          icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
+        }
+      });
+    } catch (error) {
+      console.error("Remove access error:", error);
+      setAccessList(previousAccessList);
+      toast.error("Failed to remove access");
+    } finally {
+      setUpdatingRoleUserIds((prev) => prev.filter((userId) => userId !== user.userId));
+    }
+  };
+
   const handleCopyLink = async () => {
     const link = `${APP_URL}/document/${documentId}`;
     try {
@@ -597,6 +644,7 @@ export function ShareDocumentModal({
                     <RoleSelect
                         value={user.roleName}
                         onChange={(role) => handleChangeRole(user, role)}
+                        onRemove={() => handleRemoveAccess(user)}
                         disabled={updatingRoleUserIds.includes(user.userId)}
                         roleOptions={assignableRoles}
                     />

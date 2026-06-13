@@ -406,4 +406,10 @@ export const documentApi = {
   changeMemberRole: (documentId: string, data: IChangeDocumentRolePayload): Promise<ApiResponse<SuccessMessageResponse>> => {
     return axiosInstance.patch(`/document/${documentId}/change-role`, data);
   },
+  /**
+   * Xóa liên kết của người dùng với document 
+   */
+  deleteMemberRole: (documentId: string, userId: string): Promise<ApiResponse<string>> => {
+    return axiosInstance.delete(`/document/${documentId}/external-members/${userId}`);
+  }
 };
