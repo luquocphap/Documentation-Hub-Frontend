@@ -297,6 +297,22 @@ export interface IDocumentRole {
   description: string;
 }
 
+export interface IExternalDocumentMemberItem {
+  userId: string;
+  fullName: string;
+  email: string;
+  roleId: string;
+  roleName: string;
+}
+
+// Kiểu trả về khi gọi GET /document/:documentId/external-members
+export type IExternalDocumentMembersResponse = IExternalDocumentMemberItem[];
+
+export interface IChangeDocumentRolePayload {
+  userId: string;
+  roleId: string;
+}
+
 // --- DOCUMENT API ---
 
 export const documentApi = {
@@ -375,5 +391,19 @@ export const documentApi = {
    */
   inviteMember: (documentId: string, data: InviteMemberInput): Promise<ApiResponse<SuccessMessageResponse>> => {
       return axiosInstance.post(`/document/${documentId}/invite`, data);
-  }
+  },
+
+  /**
+   * Lấy danh sách các thành viên của document (nhưng không phải là thành viên của Workspace chứa nó)
+   */
+  getExternalMembers: (documentId: string): Promise<ApiResponse<IExternalDocumentMembersResponse>> => {
+    return axiosInstance.get(`/document/${documentId}/external-members`);
+  },
+
+  /**
+   * Thay đổi vai trò của người dùng đối với một document cụ thể
+   */
+  changeMemberRole: (documentId: string, data: IChangeDocumentRolePayload): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.patch(`/document/${documentId}/change-role`, data);
+  },
 };

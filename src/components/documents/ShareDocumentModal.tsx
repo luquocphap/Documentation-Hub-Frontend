@@ -9,9 +9,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { X, ChevronDown, Check, Loader2 } from "lucide-react";
+import { X, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { authApi, documentApi, type IWorkspaceDetailResponse, workspaceApi } from "@/api/api";
+import { authApi, documentApi, type IDocumentRole, type IExternalDocumentMemberItem, type IMemberCandidateItem, type IWorkspaceDetailResponse, workspaceApi } from "@/api/api";
 import { BuildingOfficeIcon } from "@phosphor-icons/react";
 import avatarIcon from "@/assets/images/avatar.png";
 import axios from "axios";
@@ -19,12 +19,10 @@ import { APP_URL } from "@/lib/constant";
 
 export type ShareRole = string;
 
-export interface ShareAccessUser {
-  id: string;
-  name: string;
+interface CurrentUserInfo {
+  fullName?: string;
+  name?: string;
   email: string;
-  role: ShareRole;
-  avatarUrl?: string;
 }
 
 export interface ShareDocumentOwner {
@@ -40,7 +38,6 @@ interface ShareDocumentModalProps {
   documentTitle: string;
   workspaceId: string;
   owner?: ShareDocumentOwner;
-  externalAccess?: ShareAccessUser[];
 }
 
 /** Dropdown chọn role — dùng chung cho ô thêm email và từng người trong danh sách */
@@ -51,9 +48,9 @@ function RoleSelect({
   roleOptions = [],
 }: {
   value: ShareRole;
-  onChange: (role: ShareRole) => void;
+  onChange: (role: IDocumentRole) => void;
   disabled?: boolean;
-  roleOptions?: any[];
+  roleOptions?: IDocumentRole[];
 }) {
   if (disabled) {
     return (
@@ -78,7 +75,7 @@ function RoleSelect({
         {roleOptions.map((role) => (
           <DropdownMenuItem
             key={role._id}
-            onSelect={() => onChange(role.name)}
+            onSelect={() => onChange(role)}
             className="p-2.5 cursor-pointer rounded-lg hover:bg-secondary"
           >
             <div className="w-full flex flex-col gap-0.5">
@@ -122,82 +119,100 @@ export function ShareDocumentModal({
   documentTitle,
   documentId,
   workspaceId,
-  externalAccess = [],
 }: ShareDocumentModalProps) {
   const [keyword, setKeyword] = useState("");
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<IMemberCandidateItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
+  const [isLoadingAccessList, setIsLoadingAccessList] = useState(false);
+  const [updatingRoleUserIds, setUpdatingRoleUserIds] = useState<string[]>([]);
   
-  const [newRole, setNewRole] = useState<ShareRole>("Viewer");
-  const [accessList, setAccessList] = useState<ShareAccessUser[]>(externalAccess);
-  const [roles, setRoles] = useState<any[]>([]);
-  const [ownerInfo, setOwnerInfo] = useState<any>(null);
+  const [newRoleId, setNewRoleId] = useState("");
+  const [accessList, setAccessList] = useState<IExternalDocumentMemberItem[]>([]);
+  const [roles, setRoles] = useState<IDocumentRole[]>([]);
+  const [ownerInfo, setOwnerInfo] = useState<CurrentUserInfo | null>(null);
   const [workspace, setWorkspace] = useState<IWorkspaceDetailResponse>();
+  const assignableRoles = roles.filter((role) => role.name !== "Owner");
+  const selectedNewRole = roles.find((role) => role._id === newRoleId);
 
-  // Đồng bộ lại danh sách khi mở modal / dữ liệu thay đổi
+  // Khi mở modal, tải dữ liệu share và external members trực tiếp từ API.
   useEffect(() => {
-    if (isOpen) {
-      setAccessList(externalAccess);
+    if (!isOpen || !documentId) return;
+
+    let shouldIgnore = false;
+
+    const fetchData = async () => {
       setKeyword("");
       setSelectedEmails([]);
       setSearchResults([]);
-    }
-  }, [isOpen]);
+      setAccessList([]);
+      setUpdatingRoleUserIds([]);
+      setIsLoadingAccessList(true);
+      try {
+        const [rolesRes, userRes, externalMembersRes, workspaceRes] = await Promise.all([
+          documentApi.getRoles(),
+          authApi.getInfo(),
+          documentApi.getExternalMembers(documentId),
+          workspaceId ? workspaceApi.getById(workspaceId) : Promise.resolve(null),
+        ]);
 
-  // Cập nhật lại useEffect để gọi API
-  useEffect(() => {
-    if (isOpen) {
-      setAccessList(externalAccess);
-      
-      const fetchData = async () => {
-        try {
-          const [rolesRes, userRes, workspaceRes] = await Promise.all([
-            documentApi.getRoles(),
-            authApi.getInfo(),
-            workspaceApi.getById(workspaceId)
-          ]);
-          
-          // Kiểm tra và gán danh sách roles (đảm bảo luôn là mảng)
-          const fetchedRoles = Array.isArray(rolesRes.data) ? rolesRes.data : [rolesRes.data];
-          setRoles(fetchedRoles);
-          
-          if (fetchedRoles.length > 0) {
-            setNewRole(fetchedRoles[1].name);
+        if (shouldIgnore) return;
+
+        const fetchedRoles = rolesRes.data;
+        const fetchedAssignableRoles = fetchedRoles.filter((role) => role.name !== "Owner");
+        const defaultRole = fetchedAssignableRoles.find((role) => role.name === "Viewer")
+          ?? fetchedAssignableRoles[0]
+          ?? fetchedRoles[0];
+        setRoles(fetchedRoles);
+
+        setNewRoleId((currentRoleId) => {
+          if (currentRoleId && fetchedAssignableRoles.some((role) => role._id === currentRoleId)) {
+            return currentRoleId;
           }
-          
-          // Gán thông tin user gọi API thành Owner
-          setOwnerInfo(userRes.data);
-          setWorkspace(workspaceRes.data);
-        } catch (error) {
-          console.error("Failed to fetch data:", error);
-        }
-      };
 
-      fetchData();
-    }
-  }, [isOpen]);
+          return defaultRole?._id ?? "";
+        });
+
+        setOwnerInfo(userRes.data);
+        setWorkspace(workspaceRes?.data);
+        setAccessList(externalMembersRes.data);
+      } catch (error) {
+        if (!shouldIgnore) {
+          console.error("Failed to fetch share modal data:", error);
+          setAccessList([]);
+          toast.error("Failed to load sharing information");
+        }
+      } finally {
+        if (!shouldIgnore) {
+          setIsLoadingAccessList(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, [isOpen, documentId, workspaceId]);
 
   // Logic Debounce & Abort tìm kiếm email
   useEffect(() => {
-    if (!keyword.trim() || !workspaceId) {
-      setSearchResults([]);
-      setIsSearching(false);
+    if (!keyword.trim() || !workspaceId || !documentId) {
       return;
     }
 
-    setIsSearching(true);
     const controller = new AbortController();
 
     const timerId = setTimeout(() => {
+      setIsSearching(true);
       authApi.searchCandidates(
         { keyword: keyword, workspaceId: workspaceId, documentId: documentId }, 
         { signal: controller.signal }
       )
         .then((res) => {
           setSearchResults(res.data);
-          console.log(searchResults);
         })
         .catch((err) => {
           if (!axios.isCancel(err)) {
@@ -214,7 +229,16 @@ export function ShareDocumentModal({
       clearTimeout(timerId);
       controller.abort();
     };
-  }, [keyword, workspaceId]);
+  }, [keyword, workspaceId, documentId]);
+
+  const handleKeywordChange = (value: string) => {
+    setKeyword(value);
+
+    if (!value.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  };
 
   const addEmail = (emailToAdd: string) => {
     const trimmed = emailToAdd.trim();
@@ -223,6 +247,7 @@ export function ShareDocumentModal({
     }
     setKeyword("");
     setSearchResults([]);
+    setIsSearching(false);
   };
 
   const removeEmail = (emailToRemove: string) => {
@@ -242,10 +267,8 @@ export function ShareDocumentModal({
     const finalEmails = [...selectedEmails];
 
     if (finalEmails.length === 0) return;
-    console.log(finalEmails)
-
-    // Tìm roleId từ danh sách roles dựa trên newRole (tên role hiện tại đang chọn)
-    const selectedRoleObj = roles.find((r) => r.name === newRole);
+    // Tìm roleId từ danh sách roles dựa trên role hiện tại đang chọn
+    const selectedRoleObj = roles.find((r) => r._id === newRoleId);
     if (!selectedRoleObj) {
       toast.error("Vui lòng chọn quyền hợp lệ");
       return;
@@ -278,19 +301,12 @@ export function ShareDocumentModal({
       });
 
       // Cập nhật AccessList trên UI
-      setAccessList((prev) => [
-        ...prev,
-        ...finalEmails.map((emailStr) => ({
-          id: `${Date.now()}-${emailStr}`,
-          name: emailStr.split("@")[0],
-          email: emailStr,
-          role: newRole,
-        }))
-      ]);
+      const externalMembersRes = await documentApi.getExternalMembers(documentId);
+      setAccessList(externalMembersRes.data);
       
       setSelectedEmails([]);
       setKeyword("");
-      if (roles.length > 0) setNewRole(roles[0].name); 
+      if (assignableRoles.length > 0) setNewRoleId(assignableRoles[0]._id); 
 
     } catch (error) {
       console.error("Invite error:", error);
@@ -300,8 +316,45 @@ export function ShareDocumentModal({
     }
   };
 
-  const handleChangeRole = (id: string, role: ShareRole) => {
-    setAccessList((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+  const handleChangeRole = async (user: IExternalDocumentMemberItem, role: IDocumentRole) => {
+    if (user.roleId === role._id) return;
+
+    const previousAccessList = accessList;
+    setUpdatingRoleUserIds((prev) => [...prev, user.userId]);
+    setAccessList((prev) =>
+      prev.map((member) =>
+        member.userId === user.userId
+          ? { ...member, roleId: role._id, roleName: role.name }
+          : member
+      )
+    );
+
+    try {
+      await documentApi.changeMemberRole(documentId, {
+        userId: user.userId,
+        roleId: role._id,
+      });
+
+      toast.success("Role updated successfully", {
+        style: {
+          backgroundColor: "bg-green-50",
+          fontFamily: 'var(--font-sans), sans-serif',
+          fontWeight: 500,
+          fontSize: 'text-sm',
+          letterSpacing: '0%',
+          border: '1px solid bg-green-700',
+        },
+        classNames: {
+          icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
+        }
+      });
+    } catch (error) {
+      console.error("Change role error:", error);
+      setAccessList(previousAccessList);
+      toast.error("Failed to update role");
+    } finally {
+      setUpdatingRoleUserIds((prev) => prev.filter((userId) => userId !== user.userId));
+    }
   };
 
   const handleCopyLink = async () => {
@@ -377,7 +430,7 @@ export function ShareDocumentModal({
                     <input
                       type="text"
                       value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
+                      onChange={(e) => handleKeywordChange(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder={selectedEmails.length === 0 ? "Enter email address..." : ""}
                       className="flex-1 min-w-30 bg-transparent outline-none text-sm px-1 placeholder:text-muted-foreground h-7"
@@ -386,15 +439,12 @@ export function ShareDocumentModal({
 
                   {/* Nút RoleSelect cố định bên phải (vẫn giữ thiết kế CSS cũ) */}
                   <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                    <RoleSelect value={newRole} onChange={setNewRole} roleOptions={roles.filter((r) => r._id !== "111111111111111111111001")} />
+                    <RoleSelect
+                      value={selectedNewRole?.name ?? "Select role"}
+                      onChange={(role) => setNewRoleId(role._id)}
+                      roleOptions={assignableRoles}
+                    />
                   </div>
-
-                  {/* Icon Loading */}
-                  {isSearching && keyword && (
-                    <div className="absolute top-[calc(100%+4px)] right-2 z-50">
-                      <Loader2 size={16} className="animate-spin text-muted-foreground" />
-                    </div>
-                  )}
 
                   {/* Dropdown: Kết quả có người dùng trong hệ thống */}
                   {keyword.trim() !== "" && !isSearching && searchResults.length > 0 && (
@@ -515,32 +565,40 @@ export function ShareDocumentModal({
                          />
                     </Avatar>
                   }
-                  primary={ownerInfo.fullName || ownerInfo.name}
+                  primary={ownerInfo.fullName || ownerInfo.name || ownerInfo.email}
                   secondary={ownerInfo.email}
                   trailing={<RoleSelect value="Owner" onChange={() => {}} disabled />}
                 />
               )}
 
               {/* Người ngoài workspace có quyền xem — owner có thể đổi role */}
-              {accessList.map((user) => (
+              {isLoadingAccessList && (
+                <div className="w-full flex items-center gap-2 py-2.5 px-3 text-sm text-muted-foreground">
+                  <Loader2 size={16} className="animate-spin" />
+                  Loading shared members...
+                </div>
+              )}
+
+              {!isLoadingAccessList && accessList.map((user) => (
                 <AccessRow
-                  key={user.id}
+                  key={user.userId}
                   avatar={
                     <Avatar>
                       <img 
                             src={avatarIcon} 
-                            alt={user.name}
+                            alt={user.fullName}
                             className="rounded-full"
                          />
                     </Avatar>
                   }
-                  primary={user.name}
+                  primary={user.fullName}
                   secondary={user.email}
                   trailing={
                     <RoleSelect
-                        value={user.role}
-                        onChange={(role) => handleChangeRole(user.id, role)}
-                        roleOptions={roles}
+                        value={user.roleName}
+                        onChange={(role) => handleChangeRole(user, role)}
+                        disabled={updatingRoleUserIds.includes(user.userId)}
+                        roleOptions={assignableRoles}
                     />
                   }
                 />

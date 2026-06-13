@@ -16,10 +16,16 @@ const axiosInstance = axios.create({
 let isRefreshing = false;
 let failedQueue: Array<{
     resolve: (value?: unknown) => void;
-    reject: (reason?: any) => void;
+    reject: (reason?: unknown) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+interface ErrorResponse {
+    statusCode?: number;
+    status?: string;
+    message?: string;
+}
+
+const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue.forEach((prom) => {
         if (error) {
             prom.reject(error);
@@ -49,6 +55,8 @@ axiosInstance.interceptors.response.use(
     },
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const errorData = error.response?.data as ErrorResponse | undefined;
+        const isJwtExpired = error.response?.status === 403 && errorData?.message === 'jwt expired';
 
         if (error.response?.status === 401) {
             localStorage.removeItem('isLoggedIn');
@@ -61,8 +69,15 @@ axiosInstance.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        // Bắt lỗi 403 (jwt expired) và chưa từng thử refresh
-        if (error.response?.status === 403 && !originalRequest._retry) {
+        // Chỉ refresh khi backend báo JWT hết hạn; 403 khác là lỗi quyền thật.
+        if (error.response?.status === 403 && !isJwtExpired) {
+            window.location.href = '/403';
+            return Promise.reject(error);
+        }
+
+        if (isJwtExpired && !originalRequest._retry) {
+            originalRequest._retry = true;
+
             if (isRefreshing) {
                 // Nếu đang refresh, đưa các request khác vào hàng đợi
                 return new Promise(function (resolve, reject) {
@@ -76,7 +91,6 @@ axiosInstance.interceptors.response.use(
                     });
             }
 
-            originalRequest._retry = true;
             isRefreshing = true;
 
             try {
@@ -99,10 +113,14 @@ axiosInstance.interceptors.response.use(
             } finally {
                 isRefreshing = false;
             }
-        } else {
+        }
+
+        if (error.response?.status === 403) {
             window.location.href = '/403';
             return Promise.reject(error);
         }
+
+        return Promise.reject(error);
 
     }
 );
