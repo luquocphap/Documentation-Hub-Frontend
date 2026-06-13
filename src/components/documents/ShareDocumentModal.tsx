@@ -74,15 +74,17 @@ function RoleSelect({
           <ChevronDown size={14} className="text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-32">
+      <DropdownMenuContent align="end" className="w-60.5">
         {roleOptions.map((role) => (
           <DropdownMenuItem
             key={role._id}
             onSelect={() => onChange(role.name)}
-            className="justify-between"
+            className="p-2.5 cursor-pointer rounded-lg hover:bg-secondary"
           >
-            {role.name}
-            {role.name === value && <Check size={14} className="text-foreground" />}
+            <div className="w-full flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-foreground">{role.name}</span>
+                <span className="text-xs text-muted-foreground">{role.description}</span>
+            </div>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
