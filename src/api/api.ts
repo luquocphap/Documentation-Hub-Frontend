@@ -413,3 +413,140 @@ export const documentApi = {
     return axiosInstance.delete(`/document/${documentId}/external-members/${userId}`);
   }
 };
+
+// --- TYPES / INTERFACES CHO COMMENT ---
+
+export interface CreateCommentReplyInput {
+  text: string;
+}
+
+export interface ICommentReplyResponse {
+  _id: string;
+  commentId: string;
+  text: string;
+  createdBy: ICommentCreator;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDocumentAnnotationInput {
+  annotationId: string;
+  type: string;
+  pageNumber: number;
+  quads?: Record<string, any>[];
+  rect?: Record<string, any>;
+  contents?: string;
+  color?: string;
+  opacity?: number;
+  xfdf?: string;
+}
+
+export interface CreateDocumentCommentInput {
+  documentId: string;
+  text: string;
+  selectedText?: string;
+  pageNumber: number;
+  status?: 'OPEN' | 'RESOLVED';
+  annotationRef?: string;
+  annotationId?: string;
+  annotation?: CreateDocumentAnnotationInput;
+}
+
+export type UpdateDocumentAnnotationInput = Partial<CreateDocumentAnnotationInput>;
+
+export interface UpdateDocumentCommentInput {
+  text?: string;
+  selectedText?: string;
+  pageNumber?: number;
+  status?: 'OPEN' | 'RESOLVED';
+  annotationRef?: string;
+  annotationId?: string;
+  annotation?: UpdateDocumentAnnotationInput;
+}
+
+export interface IDocumentAnnotationResponse {
+  _id: string;
+  documentId: string;
+  annotationId: string;
+  type: string;
+  pageNumber: number;
+  quads: Record<string, any>[];
+  rect: Record<string, any> | null;
+  contents: string;
+  color: string;
+  opacity: number;
+  xfdf: string | null;
+  createdBy: string;
+  updatedBy: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ICommentCreator {
+  id: string;
+  fullName: string;
+}
+
+export interface IDocumentCommentResponse {
+  _id: string;
+  documentId: string;
+  text: string;
+  selectedText: string | null;
+  pageNumber: number;
+  status: 'OPEN' | 'RESOLVED';
+  annotationRef: IDocumentAnnotationResponse | string | null; 
+  annotationId: string | null;
+  replyCount: Number;
+  createdBy: ICommentCreator;
+  updatedBy: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- COMMENT API ---
+
+export const commentApi = {
+  /**
+   * Lấy danh sách comment của một tài liệu
+   */
+  getByDocumentId: (documentId: string): Promise<ApiResponse<IDocumentCommentResponse[]>> => {
+    return axiosInstance.get(`/comment/${documentId}`);
+  },
+
+  /**
+   * Tạo một comment mới (và annotation đi kèm nếu có)
+   */
+  create: (data: CreateDocumentCommentInput): Promise<ApiResponse<IDocumentCommentResponse>> => {
+    return axiosInstance.post('/comment', data);
+  },
+
+  /**
+   * Cập nhật một comment (và annotation đi kèm nếu có)
+   */
+  update: (commentId: string, data: UpdateDocumentCommentInput): Promise<ApiResponse<IDocumentCommentResponse>> => {
+    return axiosInstance.patch(`/comment/${commentId}`, data);
+  },
+
+  /**
+   * Xóa mềm một comment
+   */
+  delete: (commentId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.delete(`/comment/${commentId}`);
+  },
+
+  /**
+   * Tạo một reply phản hồi cho comment gốc
+   */
+  createReply: (commentId: string, data: CreateCommentReplyInput): Promise<ApiResponse<ICommentReplyResponse>> => {
+    return axiosInstance.post(`/comment/${commentId}/reply`, data);
+  },
+
+  /**
+   * Lấy danh sách các bài replies của một comment gốc
+   */
+  getReplies: (commentId: string): Promise<ApiResponse<ICommentReplyResponse[]>> => {
+    return axiosInstance.get(`/comment/${commentId}/replies`);
+  }
+};

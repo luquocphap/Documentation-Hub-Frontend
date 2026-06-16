@@ -187,7 +187,7 @@ export function CreateMarkdownDocumentModal({ isOpen, onClose, workspaceId, onSu
                         </button>
 
                         {/* TOOLTIP: Thiết kế chuẩn thông số (h-28, px-12, py-6, bg-171717) */}
-                        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity flex flex-row justify-center items-center px-3 py-1.5 gap-2 bg-[#171717] rounded-lg h-7 whitespace-nowrap text-white text-[12px] shadow-md z-50">
+                        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity flex flex-row justify-center items-center px-3 py-1.5 gap-2 bg-[#171717] rounded-lg h-7 whitespace-nowrap text-white text-[12px] shadow-md z-1000">
                           {action.tooltip}
                         </div>
                       </div>
