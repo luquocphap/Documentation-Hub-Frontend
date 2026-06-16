@@ -560,3 +560,77 @@ export const commentApi = {
     return axiosInstance.get(`/comment/${commentId}/replies`);
   }
 };
+
+
+// --- TYPES / INTERFACES CHO SEARCH ---
+
+export interface SearchDocumentQuery {
+  search?: string;
+  workspaceIds?: string[] | string;
+  updatedFrom?: string | Date;
+  updatedTo?: string | Date;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ISearchDocumentItem {
+  id: string;
+  title: string;
+  workspaceId: string;
+  public_id: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail?: string;
+  contentPreview: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface ISearchPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ISearchDocumentResponse {
+  items: ISearchDocumentItem[];
+  pagination: ISearchPagination;
+}
+
+const formatSearchDate = (value?: string | Date) => {
+  if (!value) return undefined;
+  return value instanceof Date ? value.toISOString() : value;
+};
+
+const buildSearchDocumentParams = (query?: SearchDocumentQuery) => {
+  if (!query) return undefined;
+
+  return {
+    search: query.search,
+    workspaceIds: Array.isArray(query.workspaceIds)
+      ? query.workspaceIds.join(',')
+      : query.workspaceIds,
+    updatedFrom: formatSearchDate(query.updatedFrom),
+    updatedTo: formatSearchDate(query.updatedTo),
+    page: query.page,
+    pageSize: query.pageSize,
+  };
+};
+
+// --- SEARCH API ---
+
+export const searchApi = {
+  /**
+   * Search document theo title/content, workspaceIds, updated_at range và pagination.
+   */
+  searchDocuments: (
+    query?: SearchDocumentQuery,
+  ): Promise<ApiResponse<ISearchDocumentResponse>> => {
+    return axiosInstance.get('/search/document', {
+      params: buildSearchDocumentParams(query),
+    });
+  },
+};
