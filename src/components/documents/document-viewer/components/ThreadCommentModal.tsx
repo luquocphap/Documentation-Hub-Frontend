@@ -309,7 +309,7 @@ function ThreadBranchItem({
   );
 }
 
-export function RightCommentPanel({
+export function ThreadCommentModal({
   comment,
   onReplyCreated,
   onCommentUpdated,

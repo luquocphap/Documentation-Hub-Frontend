@@ -14,7 +14,7 @@ import { CommentAnchor } from "./components/CommentAnchor";
 import { CommentInputBox } from "./components/CommentInputBox";
 import { DiscardDialog } from "./components/DiscardDialog";
 import { PageNavigationBar } from "./components/PageNavigationBar";
-import { RightCommentPanel } from "./components/RightCommentPanel";
+import { ThreadCommentModal } from "./components/ThreadCommentModal";
 import type {
   ApryseDocumentViewer,
   CommentCoordinateMode,
@@ -887,7 +887,7 @@ export function DocumentViewer({
         </div>
 
         {activeComment && (
-          <RightCommentPanel
+          <ThreadCommentModal
             key={activeComment._id}
             comment={activeComment}
             onReplyCreated={handleReplyCreated}
