@@ -297,6 +297,22 @@ export interface IDocumentRole {
   description: string;
 }
 
+export interface IExternalDocumentMemberItem {
+  userId: string;
+  fullName: string;
+  email: string;
+  roleId: string;
+  roleName: string;
+}
+
+// Kiểu trả về khi gọi GET /document/:documentId/external-members
+export type IExternalDocumentMembersResponse = IExternalDocumentMemberItem[];
+
+export interface IChangeDocumentRolePayload {
+  userId: string;
+  roleId: string;
+}
+
 // --- DOCUMENT API ---
 
 export const documentApi = {
@@ -375,5 +391,172 @@ export const documentApi = {
    */
   inviteMember: (documentId: string, data: InviteMemberInput): Promise<ApiResponse<SuccessMessageResponse>> => {
       return axiosInstance.post(`/document/${documentId}/invite`, data);
+  },
+
+  /**
+   * Lấy danh sách các thành viên của document (nhưng không phải là thành viên của Workspace chứa nó)
+   */
+  getExternalMembers: (documentId: string): Promise<ApiResponse<IExternalDocumentMembersResponse>> => {
+    return axiosInstance.get(`/document/${documentId}/external-members`);
+  },
+
+  /**
+   * Thay đổi vai trò của người dùng đối với một document cụ thể
+   */
+  changeMemberRole: (documentId: string, data: IChangeDocumentRolePayload): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.patch(`/document/${documentId}/change-role`, data);
+  },
+  /**
+   * Xóa liên kết của người dùng với document 
+   */
+  deleteMemberRole: (documentId: string, userId: string): Promise<ApiResponse<string>> => {
+    return axiosInstance.delete(`/document/${documentId}/external-members/${userId}`);
+  }
+};
+
+// --- TYPES / INTERFACES CHO COMMENT ---
+
+export interface CreateCommentReplyInput {
+  text: string;
+}
+
+export type UpdateCommentReplyInput = Partial<CreateCommentReplyInput>;
+
+export interface ICommentReplyResponse {
+  _id: string;
+  commentId: string;
+  text: string;
+  owner: ICommentCreator;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  created_at: string;
+  updated_at: string;
+  isUpdated: boolean;
+}
+
+export interface CreateDocumentAnnotationInput {
+  annotationId: string;
+  type: string;
+  pageNumber: number;
+  quads?: Record<string, any>[];
+  rect?: Record<string, any>;
+  contents?: string;
+  color?: string;
+  opacity?: number;
+  xfdf?: string;
+}
+
+export interface CreateDocumentCommentInput {
+  documentId: string;
+  text: string;
+  selectedText?: string;
+  pageNumber: number;
+  status?: 'OPEN' | 'RESOLVED';
+  annotationRef?: string;
+  annotationId?: string;
+  annotation?: CreateDocumentAnnotationInput;
+}
+
+export type UpdateDocumentAnnotationInput = Partial<CreateDocumentAnnotationInput>;
+
+export interface UpdateDocumentCommentInput {
+  text?: string;
+  selectedText?: string;
+  pageNumber?: number;
+  status?: 'OPEN' | 'RESOLVED';
+  annotationRef?: string;
+  annotationId?: string;
+  annotation?: UpdateDocumentAnnotationInput;
+}
+
+export interface IDocumentAnnotationResponse {
+  _id: string;
+  documentId: string;
+  annotationId: string;
+  type: string;
+  pageNumber: number;
+  quads: Record<string, any>[];
+  rect: Record<string, any> | null;
+  contents: string;
+  color: string;
+  opacity: number;
+  xfdf: string | null;
+  owner: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ICommentCreator {
+  id: string;
+  fullName: string;
+}
+
+export interface IDocumentCommentResponse {
+  _id: string;
+  documentId: string;
+  text: string;
+  selectedText: string | null;
+  pageNumber: number;
+  status: 'OPEN' | 'RESOLVED';
+  annotationRef: IDocumentAnnotationResponse | string | null; 
+  annotationId: string | null;
+  replyCount: Number;
+  owner: ICommentCreator;
+  created_at: string;
+  updated_at: string;
+  isUpdated: boolean;
+}
+
+// --- COMMENT API ---
+
+export const commentApi = {
+  /**
+   * Lấy danh sách comment của một tài liệu
+   */
+  getByDocumentId: (documentId: string): Promise<ApiResponse<IDocumentCommentResponse[]>> => {
+    return axiosInstance.get(`/comment/${documentId}`);
+  },
+
+  /**
+   * Tạo một comment mới (và annotation đi kèm nếu có)
+   */
+  create: (data: CreateDocumentCommentInput): Promise<ApiResponse<IDocumentCommentResponse>> => {
+    return axiosInstance.post('/comment', data);
+  },
+
+  /**
+   * Cập nhật một comment (và annotation đi kèm nếu có)
+   */
+  update: (commentId: string, data: UpdateDocumentCommentInput): Promise<ApiResponse<IDocumentCommentResponse>> => {
+    return axiosInstance.patch(`/comment/${commentId}`, data);
+  },
+
+  /**
+   * Xóa mềm một comment
+   */
+  delete: (commentId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.delete(`/comment/${commentId}`);
+  },
+
+  /**
+   * Tạo một reply phản hồi cho comment gốc
+   */
+  createReply: (commentId: string, data: CreateCommentReplyInput): Promise<ApiResponse<ICommentReplyResponse>> => {
+    return axiosInstance.post(`/comment/${commentId}/reply`, data);
+  },
+
+  /**
+   * Lấy danh sách các bài replies của một comment gốc
+   */
+  updateReply: (commentId: string, replyId: string, data: UpdateCommentReplyInput): Promise<ApiResponse<ICommentReplyResponse>> => {
+    return axiosInstance.patch(`/comment/${commentId}/reply/${replyId}`, data);
+  },
+
+  deleteReply: (commentId: string, replyId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.delete(`/comment/${commentId}/reply/${replyId}`);
+  },
+
+  getReplies: (commentId: string): Promise<ApiResponse<ICommentReplyResponse[]>> => {
+    return axiosInstance.get(`/comment/${commentId}/replies`);
   }
 };

@@ -8,15 +8,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-import { DocumentViewer, type DocumentViewerHandle } from "@/components/documents/DocumentViewer";
 import { ShareDocumentModal } from "@/components/documents/ShareDocumentModal";
 import { DeleteDocumentModal } from "@/components/documents/DeleteDocumentModal";
-
-declare global {
-  interface Window {
-    Core: any;
-  }
-}
+import { DocumentViewer } from "@/components/documents/document-viewer/DocumentViewer";
+import type { DocumentViewerHandle } from "@/components/documents/document-viewer/types";
 
 export default function DocumentPage() {
   const { documentId } = useParams<{ documentId: string }>();
@@ -128,10 +123,11 @@ export default function DocumentPage() {
                 <Button 
                   variant="ghost"
                   size="sm" 
+                  onClick={() => viewerHandleRef.current?.openCommentPanel()}
                   className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
                   disabled={isEditMode}
                 >
-                  <MessageSquare size={16} className="mr-1.5" /> Comment
+                  <MessageSquare size={16} className="mr-1.5" /> Comments
                 </Button>
               )}
               {userRole === "Owner" && (
