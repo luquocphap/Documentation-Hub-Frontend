@@ -123,11 +123,11 @@ export default function DocumentPage() {
                 <Button 
                   variant="ghost"
                   size="sm" 
-                  onClick={() => viewerHandleRef.current?.startCommentMode()}
+                  onClick={() => viewerHandleRef.current?.openCommentPanel()}
                   className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
                   disabled={isEditMode}
                 >
-                  <MessageSquare size={16} className="mr-1.5" /> Comment
+                  <MessageSquare size={16} className="mr-1.5" /> Comments
                 </Button>
               )}
               {userRole === "Owner" && (

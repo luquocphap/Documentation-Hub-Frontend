@@ -21,6 +21,8 @@ import {
 
 interface RightCommentPanelProps {
   comment: IDocumentCommentResponse;
+  placement?: "anchor" | "panel";
+  onClose: () => void;
   onReplyCreated?: (commentId: string) => void;
   onReplyDeleted?: (commentId: string) => void;
   onCommentUpdated?: (comment: IDocumentCommentResponse) => void;
@@ -311,6 +313,8 @@ function ThreadBranchItem({
 
 export function ThreadCommentModal({
   comment,
+  placement = "anchor",
+  onClose,
   onReplyCreated,
   onCommentUpdated,
   onCommentDeleted,
@@ -326,6 +330,23 @@ export function ThreadCommentModal({
   const [isDeleteCommentDialogOpen, setIsDeleteCommentDialogOpen] = useState(false);
   const [deletingTargetKey, setDeletingTargetKey] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (modalRef.current?.contains(target)) return;
+      if (target.closest('[data-slot="dropdown-menu-content"], [data-slot="dialog-content"], [data-slot="dialog-overlay"]')) {
+        return;
+      }
+
+      onClose();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [onClose]);
 
   useEffect(() => {
     let isMounted = true;
@@ -490,11 +511,15 @@ export function ThreadCommentModal({
     backgroundColor: THREAD_LINE_COLOR,
   };
   const rootTarget: EditingTarget = { kind: "comment", id: comment._id };
+  const modalPositionClass = placement === "panel"
+    ? "absolute top-30 right-255"
+    : "absolute top-30 right-5";
 
   return (
     <TooltipProvider>
       <div
-        className="absolute top-30 right-5 z-50 w-87.5 rounded-lg border border-[#E5E5E5] bg-white shadow-lg overflow-hidden"
+        ref={modalRef}
+        className={`${modalPositionClass} z-50 w-87.5 rounded-lg border border-[#E5E5E5] bg-white shadow-lg overflow-hidden`}
         onMouseDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >

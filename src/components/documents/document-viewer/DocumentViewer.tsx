@@ -12,6 +12,7 @@ import { APRYSE_LICENSE_KEY, CLOUDINARY_CLOUD_NAME } from "@/lib/constant";
 import { AddCommentButton } from "./components/AddCommentButton";
 import { CommentAnchor } from "./components/CommentAnchor";
 import { CommentInputBox } from "./components/CommentInputBox";
+import { CommentPanel } from "./components/CommentPanel";
 import { DiscardDialog } from "./components/DiscardDialog";
 import { PageNavigationBar } from "./components/PageNavigationBar";
 import { ThreadCommentModal } from "./components/ThreadCommentModal";
@@ -51,7 +52,6 @@ export function DocumentViewer({
   const isCommentInputOpenRef = useRef(false);
   const isContentEditModeRef = useRef(false);
   const onViewerInitRef = useRef(onViewerInit);
-  const openAddCommentRef = useRef<() => void>(() => {});
   const getFloatingPositionRef = useRef<(
     selection: SelectedTextInfo,
     placement: FloatingPlacement
@@ -66,11 +66,13 @@ export function DocumentViewer({
   const [isSaving, setIsSaving] = useState(false);
   const [isContentEditMode, setIsContentEditMode] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
+  const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
 
   // API-backed comments
   const [comments, setComments] = useState<IDocumentCommentResponse[]>([]);
   const commentsRef = useRef<IDocumentCommentResponse[]>([]);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [activeCommentSource, setActiveCommentSource] = useState<"anchor" | "panel">("anchor");
 
   // Mapping from annotationId → commentId (for anchor lookup)
   const annotationToCommentRef = useRef<Record<string, string>>({});
@@ -402,11 +404,6 @@ export function DocumentViewer({
     setCommentDraft("");
   }, [getCurrentTextSelection, getFloatingPosition]);
 
-  // Keep openAddCommentRef in sync so the handle always calls the latest version
-  useEffect(() => {
-    openAddCommentRef.current = openCommentInput;
-  });
-
   useEffect(() => {
     getFloatingPositionRef.current = getFloatingPosition;
   });
@@ -502,6 +499,32 @@ export function DocumentViewer({
     }
   };
 
+  const scrollToCommentAnchor = useCallback((commentId: string) => {
+    const scrollEl = scrollViewRef.current;
+    const position = anchorPositions[commentId];
+
+    if (!scrollEl || !position) return;
+
+    scrollEl.scrollTo({
+      top: Math.max(0, position.top - 160),
+      behavior: "smooth",
+    });
+  }, [anchorPositions]);
+
+  const handleAnchorCommentClick = useCallback((comment: IDocumentCommentResponse) => {
+    setActiveCommentId(comment._id);
+    setActiveCommentSource("anchor");
+  }, []);
+
+  const handlePanelCommentClick = useCallback((comment: IDocumentCommentResponse) => {
+    setActiveCommentId(comment._id);
+    setActiveCommentSource("panel");
+
+    requestAnimationFrame(() => {
+      scrollToCommentAnchor(comment._id);
+    });
+  }, [scrollToCommentAnchor]);
+
   // Measure input width for rename
   useEffect(() => {
     if (measureRef.current) setInputWidth(measureRef.current.offsetWidth);
@@ -547,6 +570,7 @@ export function DocumentViewer({
         docViewer.addEventListener("documentLoaded", () => {
           setComments([]);
           setActiveCommentId(null);
+          setIsCommentPanelOpen(false);
           setAnchorPositions({});
           annotationToCommentRef.current = {};
           closeFloatingUI();
@@ -605,6 +629,7 @@ export function DocumentViewer({
                 docViewer.setToolMode(docViewer.getTool(toolName));
                 isContentEditModeRef.current = true;
                 setIsContentEditMode(true);
+                setIsCommentPanelOpen(false);
                 closeFloatingUI();
               } catch (e) { console.error("FAILED at step:", e); }
             },
@@ -617,7 +642,11 @@ export function DocumentViewer({
               } catch { /* ignore */ }
             },
             isContentEditActive: () => isContentEditModeRef.current,
-            startCommentMode: () => openAddCommentRef.current(),
+            openCommentPanel: () => {
+              closeFloatingUI();
+              void loadComments();
+              setIsCommentPanelOpen(true);
+            },
           };
           onViewerInitCallback(handle);
         }
@@ -872,6 +901,7 @@ export function DocumentViewer({
 
             {/* Comment anchors on annotated text */}
             {comments.map((comment) => {
+              if (comment._id === activeCommentId) return null;
               const pos = anchorPositions[comment._id];
               if (!pos) return null;
               return (
@@ -879,7 +909,7 @@ export function DocumentViewer({
                   key={comment._id}
                   position={pos}
                   comment={comment}
-                  onClick={(selectedComment) => setActiveCommentId(selectedComment._id)}
+                  onClick={handleAnchorCommentClick}
                 />
               );
             })}
@@ -890,9 +920,19 @@ export function DocumentViewer({
           <ThreadCommentModal
             key={activeComment._id}
             comment={activeComment}
+            placement={activeCommentSource}
+            onClose={() => setActiveCommentId(null)}
             onReplyCreated={handleReplyCreated}
             onCommentUpdated={handleCommentUpdated}
             onCommentDeleted={handleCommentDeleted}
+          />
+        )}
+
+        {isCommentPanelOpen && (
+          <CommentPanel
+            comments={comments}
+            onClose={() => setIsCommentPanelOpen(false)}
+            onSelectComment={handlePanelCommentClick}
           />
         )}
       </div>

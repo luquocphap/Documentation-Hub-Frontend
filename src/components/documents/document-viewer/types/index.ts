@@ -2,7 +2,7 @@ export interface DocumentViewerHandle {
   startContentEdit: () => void;
   endContentEdit: () => void;
   isContentEditActive: () => boolean;
-  startCommentMode: () => void;
+  openCommentPanel: () => void;
 }
 
 export interface DocumentViewerProps {
