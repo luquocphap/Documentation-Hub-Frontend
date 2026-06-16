@@ -26,11 +26,7 @@ const formatRelativeTime = (dateStr: string) => {
 
 export function CommentAnchor({ position, comment, onClick }: CommentAnchorProps) {
   const [hovered, setHovered] = useState(false);
-  const author = comment.createdBy as unknown;
-  const authorName =
-    author && typeof author === "object" && "fullName" in author
-      ? String((author as { fullName?: string }).fullName || "User")
-      : String(author || "User");
+  const authorName = comment.owner.fullName;
 
   return (
     <div

@@ -100,7 +100,17 @@ export function DocumentViewer({
       if (comment._id !== commentId) return comment;
       return {
         ...comment,
-        repliesCount: Number(comment.replyCount || 0) + 1,
+        replyCount: Number(comment.replyCount || 0) + 1,
+      };
+    }));
+  }, []);
+
+  const handleReplyDeleted = useCallback((commentId: string) => {
+    setComments((prev) => prev.map((comment) => {
+      if (comment._id !== commentId) return comment;
+      return {
+        ...comment,
+        replyCount: Math.max(0, Number(comment.replyCount || 0) - 1),
       };
     }));
   }, []);
@@ -150,6 +160,42 @@ export function DocumentViewer({
     if (!comment.annotationRef || typeof comment.annotationRef === "string") return null;
     return comment.annotationRef;
   }, []);
+
+  const handleCommentUpdated = useCallback((updatedComment: IDocumentCommentResponse) => {
+    setComments((prev) => prev.map((comment) => (
+      comment._id === updatedComment._id ? updatedComment : comment
+    )));
+  }, []);
+
+  const handleCommentDeleted = useCallback((commentId: string) => {
+    const deletedComment = commentsRef.current.find((comment) => comment._id === commentId);
+    const persistedAnnotation = deletedComment ? getCommentAnnotation(deletedComment) : null;
+    const annotationId =
+      persistedAnnotation?.annotationId ||
+      deletedComment?.annotationId ||
+      Object.entries(annotationToCommentRef.current)
+        .find(([, mappedCommentId]) => mappedCommentId === commentId)?.[0];
+
+    if (annotationId) {
+      try {
+        const annotationManager = docViewerRef.current?.getAnnotationManager();
+        const annotation = annotationManager?.getAnnotationById(annotationId);
+        if (annotation) {
+          annotationManager?.deleteAnnotation(annotation, { force: true });
+        }
+      } catch { /* ignore */ }
+
+      delete annotationToCommentRef.current[annotationId];
+    }
+
+    setComments((prev) => prev.filter((comment) => comment._id !== commentId));
+    setAnchorPositions((prev) => {
+      const next = { ...prev };
+      delete next[commentId];
+      return next;
+    });
+    setActiveCommentId((currentId) => currentId === commentId ? null : currentId);
+  }, [getCommentAnnotation]);
 
   const parseAnnotationColor = useCallback((color?: string | null) => {
     const fallback = { red: 255, green: 214, blue: 10 };
@@ -297,7 +343,7 @@ export function DocumentViewer({
         annotation.Id = annotationId;
         annotation.PageNumber = pageNumber;
         annotation.Subject = "Comment";
-        annotation.Author = persistedAnnotation?.createdBy ?? comment.createdBy.fullName;
+        annotation.Author = persistedAnnotation?.owner ?? comment.owner.fullName;
         annotation.Color = new Annotations.Color(color.red, color.green, color.blue, 0.55);
         annotation.Opacity = persistedAnnotation?.opacity ?? 0.45;
         annotation.setQuads?.(quads);
@@ -854,6 +900,9 @@ export function DocumentViewer({
             key={activeComment._id}
             comment={activeComment}
             onReplyCreated={handleReplyCreated}
+            onReplyDeleted={handleReplyDeleted}
+            onCommentUpdated={handleCommentUpdated}
+            onCommentDeleted={handleCommentDeleted}
           />
         )}
       </div>

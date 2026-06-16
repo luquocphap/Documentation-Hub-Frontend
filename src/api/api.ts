@@ -420,15 +420,18 @@ export interface CreateCommentReplyInput {
   text: string;
 }
 
+export type UpdateCommentReplyInput = Partial<CreateCommentReplyInput>;
+
 export interface ICommentReplyResponse {
   _id: string;
   commentId: string;
   text: string;
-  createdBy: ICommentCreator;
+  owner: ICommentCreator;
   isDeleted: boolean;
   deletedAt: string | null;
   created_at: string;
   updated_at: string;
+  isUpdated: boolean;
 }
 
 export interface CreateDocumentAnnotationInput {
@@ -478,8 +481,7 @@ export interface IDocumentAnnotationResponse {
   color: string;
   opacity: number;
   xfdf: string | null;
-  createdBy: string;
-  updatedBy: string | null;
+  owner: string;
   created_at: string;
   updated_at: string;
 }
@@ -499,10 +501,10 @@ export interface IDocumentCommentResponse {
   annotationRef: IDocumentAnnotationResponse | string | null; 
   annotationId: string | null;
   replyCount: Number;
-  createdBy: ICommentCreator;
-  updatedBy: string | null;
+  owner: ICommentCreator;
   created_at: string;
   updated_at: string;
+  isUpdated: boolean;
 }
 
 // --- COMMENT API ---
@@ -546,6 +548,14 @@ export const commentApi = {
   /**
    * Lấy danh sách các bài replies của một comment gốc
    */
+  updateReply: (commentId: string, replyId: string, data: UpdateCommentReplyInput): Promise<ApiResponse<ICommentReplyResponse>> => {
+    return axiosInstance.patch(`/comment/${commentId}/reply/${replyId}`, data);
+  },
+
+  deleteReply: (commentId: string, replyId: string): Promise<ApiResponse<SuccessMessageResponse>> => {
+    return axiosInstance.delete(`/comment/${commentId}/reply/${replyId}`);
+  },
+
   getReplies: (commentId: string): Promise<ApiResponse<ICommentReplyResponse[]>> => {
     return axiosInstance.get(`/comment/${commentId}/replies`);
   }
