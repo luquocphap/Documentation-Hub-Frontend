@@ -11,6 +11,7 @@ import {
 } from "@/api/api";
 import avatar from "@/assets/images/avatar.png";
 import { CommentActionsMenu } from "./CommentActionsMenu";
+import { DeleteCommentDialog } from "./DeleteCommentDialog";
 import {
   Tooltip,
   TooltipContent,
@@ -311,7 +312,6 @@ function ThreadBranchItem({
 export function RightCommentPanel({
   comment,
   onReplyCreated,
-  onReplyDeleted,
   onCommentUpdated,
   onCommentDeleted,
 }: RightCommentPanelProps) {
@@ -323,6 +323,7 @@ export function RightCommentPanel({
   const [isLoadingReplies, setIsLoadingReplies] = useState(false);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleteCommentDialogOpen, setIsDeleteCommentDialogOpen] = useState(false);
   const [deletingTargetKey, setDeletingTargetKey] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -451,23 +452,35 @@ export function RightCommentPanel({
       if (target.kind === "comment") {
         await commentApi.delete(target.id);
         onCommentDeleted?.(target.id);
+        setIsDeleteCommentDialogOpen(false);
       } else {
         await commentApi.deleteReply(comment._id, target.id);
-        setReplies((prev) => prev.filter((reply) => reply._id !== target.id));
-        onReplyDeleted?.(comment._id);
+        setReplies((prev) => 
+          prev.map((reply) => (
+            reply._id === target.id ? {...reply, isDeleted: true} : {...reply} 
+          ))
+        );
       }
 
       if (editingTarget && getEditingKey(editingTarget) === targetKey) {
         cancelEditing();
       }
 
-      toast.success("Comment deleted.");
     } catch (error) {
       console.error("Failed to delete comment:", error);
       toast.error("Failed to delete comment.");
     } finally {
       setDeletingTargetKey(null);
     }
+  };
+
+  const handleDeleteRequest = (target: EditingTarget) => {
+    if (target.kind === "comment") {
+      setIsDeleteCommentDialogOpen(true);
+      return;
+    }
+
+    handleDelete(target);
   };
 
   const spineStyle: CSSProperties = {
@@ -501,7 +514,7 @@ export function RightCommentPanel({
             showCreatedAtTooltip
             showMenu={shouldShowCommentMenu(comment.owner.id, currentUserId)}
             onEdit={() => startEditing(rootTarget, comment.text)}
-            onDelete={() => handleDelete(rootTarget)}
+            onDelete={() => handleDeleteRequest(rootTarget)}
             isEditing={isEditing(rootTarget)}
             editValue={editDraft}
             onEditValueChange={setEditDraft}
@@ -524,23 +537,31 @@ export function RightCommentPanel({
 
               return (
                 <ThreadBranchItem key={reply._id}>
-                  <CommentBody
-                    author={reply.owner}
-                    isUpdated={reply.isUpdated}
-                    createdAt={reply.created_at}
-                    updatedAt={reply.updated_at}
-                    text={reply.text}
-                    showMenu={shouldShowCommentMenu(reply.owner.id, currentUserId)}
-                    onEdit={() => startEditing(replyTarget, reply.text)}
-                    onDelete={() => handleDelete(replyTarget)}
-                    isEditing={isEditing(replyTarget)}
-                    editValue={editDraft}
-                    onEditValueChange={setEditDraft}
-                    onSaveEdit={handleSaveEdit}
-                    onCancelEdit={cancelEditing}
-                    isSavingEdit={isSavingEdit && isEditing(replyTarget)}
-                    isDeleting={isDeleting(replyTarget)}
-                  />
+                  {reply.isDeleted ? (
+                    <div className="mt-1 pb-2">
+                      <p className="text-sm font-normal italic leading-5 text-muted-foreground">
+                        This comment has been deleted.
+                      </p>
+                    </div>
+                  ) : (
+                    <CommentBody
+                      author={reply.owner}
+                      isUpdated={reply.isUpdated}
+                      createdAt={reply.created_at}
+                      updatedAt={reply.updated_at}
+                      text={reply.text}
+                      showMenu={shouldShowCommentMenu(reply.owner.id, currentUserId)}
+                      onEdit={() => startEditing(replyTarget, reply.text)}
+                      onDelete={() => handleDeleteRequest(replyTarget)}
+                      isEditing={isEditing(replyTarget)}
+                      editValue={editDraft}
+                      onEditValueChange={setEditDraft}
+                      onSaveEdit={handleSaveEdit}
+                      onCancelEdit={cancelEditing}
+                      isSavingEdit={isSavingEdit && isEditing(replyTarget)}
+                      isDeleting={isDeleting(replyTarget)}
+                    />
+                  )}
                 </ThreadBranchItem>
               );
             })
@@ -588,6 +609,13 @@ export function RightCommentPanel({
           </ThreadBranchItem>
         </div>
       </div>
+
+      <DeleteCommentDialog
+        open={isDeleteCommentDialogOpen}
+        isDeleting={isDeleting(rootTarget)}
+        onOpenChange={setIsDeleteCommentDialogOpen}
+        onDelete={() => handleDelete(rootTarget)}
+      />
     </TooltipProvider>
   );
 }

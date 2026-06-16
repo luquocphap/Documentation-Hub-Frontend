@@ -105,15 +105,6 @@ export function DocumentViewer({
     }));
   }, []);
 
-  const handleReplyDeleted = useCallback((commentId: string) => {
-    setComments((prev) => prev.map((comment) => {
-      if (comment._id !== commentId) return comment;
-      return {
-        ...comment,
-        replyCount: Math.max(0, Number(comment.replyCount || 0) - 1),
-      };
-    }));
-  }, []);
 
   useEffect(() => {
     isContentEditModeRef.current = isContentEditMode;
@@ -900,7 +891,6 @@ export function DocumentViewer({
             key={activeComment._id}
             comment={activeComment}
             onReplyCreated={handleReplyCreated}
-            onReplyDeleted={handleReplyDeleted}
             onCommentUpdated={handleCommentUpdated}
             onCommentDeleted={handleCommentDeleted}
           />

@@ -29,20 +29,20 @@ export function CommentActionsMenu({
           <MoreHorizontal size={16} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 rounded-xl shadow-lg p-1">
+      <DropdownMenuContent align="end" className="w-39 rounded-xl shadow-lg py-2">
         <DropdownMenuItem
-          className="p-2 cursor-pointer rounded-lg text-sm font-medium"
+          className="py-1 px-1.5 gap-1.5 cursor-pointer rounded-lg text-sm font-normal"
           onClick={onEdit}
         >
-          <Pencil className="w-4 h-4 mr-2 text-muted-foreground" />
+          <Pencil className="w-4 h-4 text-muted-foreground" />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="p-2 cursor-pointer rounded-lg text-sm font-medium text-red-600 focus:text-red-600 focus:bg-red-50 transition-colors"
+          className="py-1 px-1.5 cursor-pointer rounded-lg text-sm font-normal text-red-600 focus:text-red-600 focus:bg-red-50 transition-colors"
           onClick={onDelete}
         >
-          <Trash2 className="w-4 h-4 mr-2 text-red-600" />
-          Delete
+          <Trash2 className="w-4 h-4 gap-1.5 text-red-600" />
+          Delete comment
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
