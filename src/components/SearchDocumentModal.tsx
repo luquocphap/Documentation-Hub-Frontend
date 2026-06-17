@@ -7,7 +7,6 @@ import {
 
 import {
   Command,
-  CommandEmpty,
   CommandInput,
   CommandItem,
   CommandList,
@@ -30,6 +29,7 @@ import { Checkbox } from "./ui/checkbox";
 import { BuildingOfficeIcon, File } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import notfound from "@/assets/images/not-found-document.png";
 
 const UPDATE_TIME_LABELS = {
   any: "Any Time",
@@ -254,7 +254,7 @@ export function SearchDocumentsModal({
             **:data-[slot=input-group]:bg-white
               **:data-[slot=input-group]:border-none
               **:data-[slot=command-input]:bg-transparent">
-          <div className="flex w-full py-1 px-2.5 items-center gap-1.5 ">
+          <div className="flex w-full py-1 px-2.5 items-center gap-1.5 justify-between">
 
             <CommandInput
               value={keyword}
@@ -266,7 +266,7 @@ export function SearchDocumentsModal({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="flex h-7 w-7 items-center justify-end rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
@@ -369,7 +369,7 @@ export function SearchDocumentsModal({
             </Select>
           </div>
 
-          <CommandList className="max-h-65 px-2 pb-3">
+          <CommandList className="max-h-78 px-2 pb-3">
             {isSearching && (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 Searching documents...
@@ -383,7 +383,21 @@ export function SearchDocumentsModal({
             )}
 
             {!isSearching && hasSearchResponse && searchResultItems.length === 0 && (
-              <CommandEmpty>No documents found.</CommandEmpty>
+              <div className="flex min-h-78 flex-col items-center justify-center px-6 text-center">
+                <img
+                  src={notfound}
+                  alt="No results found"
+                  className="mb-4 h-37.5 w-37.5 object-contain"
+                />
+
+                <p className="text-sm font-medium text-foreground">
+                  Hmm, we couldn't find that.
+                </p>
+
+                <p className="mt-1 text-xs font-normal text-muted-foreground">
+                  Try different keywords or adjust your active filters.
+                </p>
+              </div>
             )}
 
             {!isSearching && searchResultItems.length > 0 && (
