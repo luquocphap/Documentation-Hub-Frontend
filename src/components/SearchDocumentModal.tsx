@@ -132,6 +132,49 @@ const formatUpdatedLabel = (updatedAt: string) => {
   return `Updated ${Math.floor(diffDays / 365)}y ago`;
 };
 
+const escapeRegExp = (value: string) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+function HighlightText({
+  text,
+  keyword,
+}: {
+  text: string;
+  keyword: string;
+}) {
+  const trimmedKeyword = keyword.trim();
+
+  if (!trimmedKeyword) {
+    return <>{text}</>;
+  }
+
+  const regex = new RegExp(`(${escapeRegExp(trimmedKeyword)})`, "ig");
+  const parts = text.split(regex);
+  const normalizedKeyword = trimmedKeyword.toLowerCase();
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        const isMatch = part.toLowerCase() === normalizedKeyword;
+
+        if (!isMatch) {
+          return <span key={`${part}-${index}`}>{part}</span>;
+        }
+
+        return (
+          <mark
+            key={`${part}-${index}`}
+            className="rounded-[3px] bg-amber-500 px-0 text-foreground"
+          >
+            {part}
+          </mark>
+        );
+      })}
+    </>
+  );
+}
+
 export function SearchDocumentsModal({
   open,
   onOpenChange,
@@ -410,7 +453,7 @@ export function SearchDocumentsModal({
                 return (
                 <CommandItem
                   key={doc.id}
-                  value={doc.title}
+                  value={doc.id}
                   onSelect={() => handleDocumentSelect(doc.id)}
                   className="flex cursor-pointer items-start gap-2.5 rounded-lg pl-2.5 pr-2 py-2"
                 >
@@ -418,12 +461,12 @@ export function SearchDocumentsModal({
 
                   <div className="min-w-0 flex-1 gap-1">
                     <p className="truncate text-sm font-medium text-foreground">
-                      {doc.title}
+                      <HighlightText text={doc.title} keyword={keyword} />
                     </p>
 
                     {doc.contentPreview && (
                       <p className="truncate text-xs text-muted-foreground">
-                        {doc.contentPreview}
+                        <HighlightText text={doc.contentPreview} keyword={keyword} />
                       </p>
                     )}
 
