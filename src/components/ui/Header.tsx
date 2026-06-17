@@ -2,6 +2,8 @@ import logo from "@/assets/images/logo.png";
 import { Bell, HelpCircle, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import avatar from "@/assets/images/avatar.png";
+import { useState } from "react";
+import { SearchDocumentsModal } from "../SearchDocumentModal";
 
 export interface HeaderUser {
   name: string;
@@ -41,6 +43,7 @@ export function Header({
   onUserClick,
   className = "",
 }: HeaderProps) {
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   return (
     <header className={`w-full h-16 bg-white border-b border-gray-200 flex items-center ${className}`}>
       {/* Khối Logo: Giữ w-64 và thêm shrink-0 */}
@@ -62,6 +65,7 @@ export function Header({
                 placeholder={searchPlaceholder}
                 className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-700 placeholder-gray-400"
                 onChange={(e) => onSearchChange?.(e.target.value)}
+                onClick={() => setIsSearchModalOpen(true)}
               />
 
               <div className="flex items-center gap-1 shrink-0 text-gray-400">
@@ -99,6 +103,10 @@ export function Header({
           </div>
         </div>
       )}
+
+      {isSearchModalOpen && 
+        <SearchDocumentsModal open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen} />
+      }
     </header>
   );
 }
