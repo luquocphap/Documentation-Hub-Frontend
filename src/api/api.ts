@@ -577,6 +577,7 @@ export interface ISearchDocumentItem {
   id: string;
   title: string;
   workspaceId: string;
+  workspaceName: string;
   public_id: string;
   ownerId: string;
   ownerName: string;
@@ -628,9 +629,16 @@ export const searchApi = {
    */
   searchDocuments: (
     query?: SearchDocumentQuery,
+    config?: import('axios').AxiosRequestConfig,
   ): Promise<ApiResponse<ISearchDocumentResponse>> => {
+    const params = buildSearchDocumentParams(query);
+
     return axiosInstance.get('/search/document', {
-      params: buildSearchDocumentParams(query),
+      ...config,
+      params: {
+        ...params,
+        ...config?.params,
+      },
     });
   },
 };
