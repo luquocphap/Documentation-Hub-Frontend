@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 
 import { Separator } from "@/components/ui/separator";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { searchApi, workspaceApi, type ISearchDocumentResponse, type WorkspaceItem } from "@/api/api";
 import avatar from "@/assets/images/avatar.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
@@ -39,6 +39,8 @@ const UPDATE_TIME_LABELS = {
   past30Days: "Past 30 days",
   pastYear: "Past year",
 } as const;
+
+const SEARCH_PAGE_SIZE = 20;
 
 type UpdateTimeOption = keyof typeof UPDATE_TIME_LABELS;
 
@@ -186,12 +188,14 @@ export function SearchDocumentsModal({
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [searchDocuments, setSearchDocuments] = useState<ISearchDocumentResponse>();
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([]);
   const [selectedUpdateTimeOption, setSelectedUpdateTimeOption] =
     useState<UpdateTimeOption>("any");
   const [selectedUpdateTime, setSelectedUpdateTime] = useState<UpdateTimeRange>(
     () => getUpdateTimeRangeRecord().any
   );
+  const isLoadingMoreRef = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -212,6 +216,8 @@ export function SearchDocumentsModal({
       setIsSearching(true);
       try {
         const searchRes = await searchApi.searchDocuments({
+          page: 1,
+          pageSize: SEARCH_PAGE_SIZE,
           search: keyword,
           workspaceIds:
             selectedWorkspaceIds.length > 0 ? selectedWorkspaceIds : undefined,
@@ -239,6 +245,63 @@ export function SearchDocumentsModal({
       controller.abort();
     };
   }, [keyword, selectedWorkspaceIds, selectedUpdateTime]);
+
+  const loadMoreDocuments = async () => {
+    if (
+      !searchDocuments ||
+      !searchDocuments.pagination.hasNextPage ||
+      isSearching ||
+      isLoadingMoreRef.current
+    ) {
+      return;
+    }
+
+    const nextPage = searchDocuments.pagination.page + 1;
+
+    try {
+      isLoadingMoreRef.current = true;
+      setIsLoadingMore(true);
+      const searchRes = await searchApi.searchDocuments({
+        page: nextPage,
+        pageSize: SEARCH_PAGE_SIZE,
+        search: keyword,
+        workspaceIds: selectedWorkspaceIds.length > 0 ? selectedWorkspaceIds : undefined,
+        updatedFrom: selectedUpdateTime.updatedFrom || undefined,
+        updatedTo: selectedUpdateTime.updatedTo || undefined,
+      })
+      const nextData = searchRes.data;
+
+      setSearchDocuments((prev) => {
+        if (!prev) return nextData;
+
+        const mergedItems = [...prev.items, ...nextData.items];
+        const uniqueItems = Array.from(
+          new Map(mergedItems.map((item) => [item.id, item])).values()
+        );
+
+        return {
+          ...nextData,
+          items: uniqueItems,
+        };
+      });
+    } catch {
+      toast.error("Error: loading more")
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+    
+  };
+
+  const handleListScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom < 10) {
+      loadMoreDocuments();
+    }
+  };
 
   const toggleWorkspace = (workspaceId: string) => {
     setSelectedWorkspaceIds((prev) =>
@@ -412,7 +475,10 @@ export function SearchDocumentsModal({
             </Select>
           </div>
 
-          <CommandList className="max-h-78 px-2 pb-3">
+          <CommandList
+            onScroll={handleListScroll}
+            className="max-h-78 px-2 pb-3"
+          >
             {isSearching && (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 Searching documents...
@@ -477,6 +543,13 @@ export function SearchDocumentsModal({
                 </CommandItem>
                 );
               }))}
+
+
+              {isLoadingMore && (
+                  <div className="py-3 text-center text-xs text-muted-foreground">
+                    Loading more documents...
+                  </div>
+              )}
           </CommandList>
 
           <Separator />
