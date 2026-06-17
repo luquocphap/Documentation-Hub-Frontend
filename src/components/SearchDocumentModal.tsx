@@ -40,7 +40,6 @@ const UPDATE_TIME_LABELS = {
   pastYear: "Past year",
 } as const;
 
-const SEARCH_PAGE_SIZE = 20;
 
 type UpdateTimeOption = keyof typeof UPDATE_TIME_LABELS;
 
@@ -217,7 +216,6 @@ export function SearchDocumentsModal({
       try {
         const searchRes = await searchApi.searchDocuments({
           page: 1,
-          pageSize: SEARCH_PAGE_SIZE,
           search: keyword,
           workspaceIds:
             selectedWorkspaceIds.length > 0 ? selectedWorkspaceIds : undefined,
@@ -263,7 +261,6 @@ export function SearchDocumentsModal({
       setIsLoadingMore(true);
       const searchRes = await searchApi.searchDocuments({
         page: nextPage,
-        pageSize: SEARCH_PAGE_SIZE,
         search: keyword,
         workspaceIds: selectedWorkspaceIds.length > 0 ? selectedWorkspaceIds : undefined,
         updatedFrom: selectedUpdateTime.updatedFrom || undefined,
