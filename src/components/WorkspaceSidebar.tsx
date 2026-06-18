@@ -134,7 +134,7 @@ export function WorkspaceSidebar({
 
         {/* Các mục chỉ hiện tùy theo role */}
         {workspace?.userRole === "Admin" && (
-          <Button {...getButtonProps("activity")}>
+          <Button {...getButtonProps("activity")} onClick={() => navigate(`/workspaces/${workspaceId}/activity-logs`)}>
             <Activity className="mr-2 w-4 h-4" /> Activity log
           </Button>
         )}

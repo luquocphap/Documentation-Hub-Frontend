@@ -642,3 +642,134 @@ export const searchApi = {
     });
   },
 };
+
+// --- ACTIVITY TYPES ---
+
+export type ActivityActionCode =
+  | 'CREATE_DOCUMENT'
+  | 'UPDATE_DOCUMENT'
+  | 'DELETE_DOCUMENT'
+  | 'SHARE_DOCUMENT'
+  | 'REVOKE_ACCESS'
+  | 'INVITE_USER'
+  | 'REMOVE_USER'
+  | 'CHANGE_USER_ROLE'
+  | 'UPDATE_SETTINGS'
+  | 'WORKSPACE_CREATION';
+
+export type ActivityTargetType = 'DOCUMENT' | 'EMAIL' | 'ROLE';
+
+export interface IActivityTarget {
+  type: ActivityTargetType;
+  value: string;
+  entityId: string | null;
+}
+
+export interface ActivityLogQuery {
+  actorIds?: string[] | string;
+  actionIds?: string[] | string;
+  createdFrom?: string | Date;
+  createdTo?: string | Date;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface IActivityLogItem {
+  id: string;
+
+  actorId: string;
+  actorName: string;
+  actorEmail?: string;
+
+  workspaceId: string;
+  workspaceName?: string;
+
+  actionCode: ActivityActionCode;
+  targets: IActivityTarget[];
+
+  createdAt: string;
+}
+
+export interface IActivityLogResponse {
+  items: IActivityLogItem[];
+  pagination: ISearchPagination;
+}
+
+export interface IActivityActor {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface IActivityActionOption {
+  id: string;
+  code: ActivityActionCode;
+  action: string;
+}
+
+export interface IActivityActionGroup {
+  id: string;
+  category: string;
+  actions: IActivityActionOption[];
+}
+
+// --- ACTIVITY QUERY HELPERS ---
+
+const formatActivityDate = (value?: string | Date) => {
+  if (!value) return undefined;
+
+  return value instanceof Date ? value.toISOString() : value;
+};
+
+const buildActivityLogParams = (query?: ActivityLogQuery) => {
+  if (!query) return undefined;
+
+  return {
+    actorIds: Array.isArray(query.actorIds)
+      ? query.actorIds.join(',')
+      : query.actorIds,
+
+    actionIds: Array.isArray(query.actionIds)
+      ? query.actionIds.join(',')
+      : query.actionIds,
+
+    createdFrom: formatActivityDate(query.createdFrom),
+    createdTo: formatActivityDate(query.createdTo),
+
+    page: query.page,
+    pageSize: query.pageSize,
+  };
+};
+
+// --- ACTIVITY API ---
+
+export const activityApi = {
+  getLogsByWorkspace: (
+    workspaceId: string,
+    query?: ActivityLogQuery,
+    config?: import('axios').AxiosRequestConfig,
+  ): Promise<ApiResponse<IActivityLogResponse>> => {
+    const params = buildActivityLogParams(query);
+
+    return axiosInstance.get(`/activity/${workspaceId}`, {
+      ...config,
+      params: {
+        ...params,
+        ...config?.params,
+      },
+    });
+  },
+
+  getActorsByWorkspace: (
+    workspaceId: string,
+    config?: import('axios').AxiosRequestConfig,
+  ): Promise<ApiResponse<IActivityActor[]>> => {
+    return axiosInstance.get(`/activity/${workspaceId}/actors`, config);
+  },
+
+  getActions: (
+    config?: import('axios').AxiosRequestConfig,
+  ): Promise<ApiResponse<IActivityActionGroup[]>> => {
+    return axiosInstance.get('/activity/actions', config);
+  },
+};
