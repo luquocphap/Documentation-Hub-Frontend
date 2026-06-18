@@ -690,6 +690,8 @@ export interface IActivityLogItem {
   createdAt: string;
 }
 
+export type ActivityLogCreatedPayload = IActivityLogItem;
+
 export interface IActivityLogResponse {
   items: IActivityLogItem[];
   pagination: ISearchPagination;

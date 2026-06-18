@@ -1,6 +1,7 @@
 import {
   activityApi,
   workspaceApi,
+  type ActivityActionCode,
   type IActivityActionGroup,
   type IActivityActor,
   type IActivityLogItem,
@@ -14,12 +15,14 @@ import { ActivityLogTable } from "@/components/ActivityLogTable";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import Header from "@/components/ui/Header";
 import { WorkspaceSidebar } from "@/components/WorkspaceSidebar";
+import { createActivitySocket } from "@/lib/socket";
 import { endOfDay, startOfDay } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { useParams } from "react-router-dom";
 
 const PAGE_SIZE = 20;
+const MAX_REALTIME_CACHE_SIZE = 100;
 
 const initialPagination: ISearchPagination = {
   page: 1,
@@ -29,6 +32,75 @@ const initialPagination: ISearchPagination = {
   hasNextPage: false,
   hasPreviousPage: false,
 };
+
+interface RealtimeActivityState {
+  page: number;
+  actorIds: string[];
+  actionCodes: ActivityActionCode[];
+  dateRange: DateRange | undefined;
+}
+
+interface CachedRealtimeActivity {
+  activity: IActivityLogItem;
+  sequence: number;
+}
+
+function buildPagination(
+  pagination: ISearchPagination,
+  additionalItems: number
+): ISearchPagination {
+  const total = pagination.total + additionalItems;
+  const totalPages = Math.ceil(total / pagination.pageSize);
+
+  return {
+    ...pagination,
+    total,
+    totalPages,
+    hasNextPage: pagination.page < totalPages,
+    hasPreviousPage: pagination.page > 1 && totalPages > 0,
+  };
+}
+
+function matchesCurrentFilters(
+  activity: IActivityLogItem,
+  state: RealtimeActivityState
+) {
+  if (
+    state.actorIds.length > 0 &&
+    !state.actorIds.includes(activity.actorId)
+  ) {
+    return false;
+  }
+
+  if (
+    state.actionCodes.length > 0 &&
+    !state.actionCodes.includes(activity.actionCode)
+  ) {
+    return false;
+  }
+
+  const createdAt = new Date(activity.createdAt);
+
+  if (Number.isNaN(createdAt.getTime())) {
+    return false;
+  }
+
+  if (
+    state.dateRange?.from &&
+    createdAt < startOfDay(state.dateRange.from)
+  ) {
+    return false;
+  }
+
+  if (
+    state.dateRange?.to &&
+    createdAt > endOfDay(state.dateRange.to)
+  ) {
+    return false;
+  }
+
+  return true;
+}
 
 export function ActivityLogPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -47,8 +119,50 @@ export function ActivityLogPage() {
   const [pagination, setPagination] =
     useState<ISearchPagination>(initialPagination);
   const [page, setPage] = useState(1);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const activityIdsRef = useRef<Set<string>>(new Set());
+  const realtimeSequenceRef = useRef(0);
+
+  // resolve many response from many socket event and cache event to merge
+  const realtimeActivitiesRef = useRef<
+    Map<string, CachedRealtimeActivity>
+  >(new Map());
+
+  const selectedActionCodes = useMemo<ActivityActionCode[]>(() => {
+    return actionCategories
+      .flatMap((category) => category.actions)
+      .filter((action) => selectedActionIds.includes(action.id))
+      .map((action) => action.code);
+  }, [actionCategories, selectedActionIds]);
+
+  const realtimeStateRef = useRef<RealtimeActivityState>({
+    page: 1,
+    actorIds: [],
+    actionCodes: [],
+    dateRange: undefined,
+  });
+
+  useEffect(() => {
+    realtimeStateRef.current = {
+      page,
+      actorIds: selectedActorIds,
+      actionCodes: selectedActionCodes,
+      dateRange,
+    };
+  }, [
+    page,
+    selectedActorIds,
+    selectedActionCodes,
+    dateRange,
+  ]);
+
+  useEffect(() => {
+    activityIdsRef.current = new Set(
+      activities.map((activity) => activity.id)
+    );
+  }, [activities]);
 
   useEffect(() => {
     const fetchWorkspaceData = async () => {
@@ -79,6 +193,11 @@ export function ActivityLogPage() {
     setSelectedActionIds([]);
     setDateRange(undefined);
     setPage(1);
+    setActivities([]);
+    setPagination(initialPagination);
+    activityIdsRef.current.clear();
+    realtimeSequenceRef.current = 0;
+    realtimeActivitiesRef.current.clear();
     setIsLoadingOptions(true);
 
     Promise.all([
@@ -90,7 +209,22 @@ export function ActivityLogPage() {
       }),
     ])
       .then(([actorRes, actionRes]) => {
-        setActors(actorRes.data);
+        setActors((currentActors) => {
+          const actorMap = new Map(
+            actorRes.data.map((actor) => [actor.id, actor])
+          );
+
+          currentActors.forEach((actor) => {
+            if (!actorMap.has(actor.id)) {
+              actorMap.set(actor.id, actor);
+            }
+          });
+
+          return Array.from(actorMap.values()).sort(
+            (first, second) =>
+              first.fullName.localeCompare(second.fullName)
+          );
+        });
         setActionCategories(actionRes.data);
       })
       .catch((error) => {
@@ -113,6 +247,7 @@ export function ActivityLogPage() {
     if (!workspaceId) return;
 
     const controller = new AbortController();
+    const requestStartSequence = realtimeSequenceRef.current;
 
     setIsLoadingActivities(true);
 
@@ -136,8 +271,56 @@ export function ActivityLogPage() {
         }
       )
       .then((response) => {
-        setActivities(response.data.items);
-        setPagination(response.data.pagination);
+        const requestState: RealtimeActivityState = {
+          page,
+          actorIds: selectedActorIds,
+          actionCodes: selectedActionCodes,
+          dateRange,
+        };
+        const responseIds = new Set(
+          response.data.items.map((activity) => activity.id)
+        );
+        const matchingRealtimeActivities = Array.from(
+          realtimeActivitiesRef.current.values()
+        )
+          .filter(
+            ({ sequence }) => sequence > requestStartSequence
+          )
+          .map(({ activity }) => activity)
+          .filter((activity) =>
+            matchesCurrentFilters(activity, requestState)
+          );
+        const missingRealtimeCount = matchingRealtimeActivities.filter(
+          (activity) => !responseIds.has(activity.id)
+        ).length;
+
+        if (page === 1) {
+          const mergedActivities = [
+            ...matchingRealtimeActivities,
+            ...response.data.items,
+          ]
+            .filter(
+              (activity, index, items) =>
+                items.findIndex((item) => item.id === activity.id) === index
+            )
+            .sort(
+              (first, second) =>
+                new Date(second.createdAt).getTime() -
+                new Date(first.createdAt).getTime()
+            )
+            .slice(0, PAGE_SIZE);
+
+          setActivities(mergedActivities);
+        } else {
+          setActivities(response.data.items);
+        }
+
+        setPagination(
+          buildPagination(
+            response.data.pagination,
+            missingRealtimeCount
+          )
+        );
       })
       .catch((error) => {
         if (!controller.signal.aborted) {
@@ -160,9 +343,167 @@ export function ActivityLogPage() {
     workspaceId,
     selectedActorIds,
     selectedActionIds,
+    selectedActionCodes,
     dateRange,
     page,
+    activityRefreshKey,
   ]);
+
+
+  // Socket for activity log
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const socket = createActivitySocket();
+
+    const joinWorkspace = () => {
+      socket.emit(
+        "workspace:join",
+        { workspaceId },
+        (response) => {
+          if (!response.success) {
+            console.error(
+              "Failed to join workspace socket room:",
+              response.error
+            );
+          }
+        }
+      );
+    };
+
+    const handleActivityCreated = (activity: IActivityLogItem) => {
+      if (activity.workspaceId !== workspaceId) {
+        return;
+      }
+      
+      // reload actors list
+      setActors((currentActors) => {
+        if (
+          currentActors.some(
+            (actor) => actor.id === activity.actorId
+          )
+        ) {
+          return currentActors;
+        }
+
+        return [
+          ...currentActors,
+          {
+            id: activity.actorId,
+            fullName: activity.actorName,
+            email: activity.actorEmail ?? "",
+          },
+        ].sort((first, second) =>
+          first.fullName.localeCompare(second.fullName)
+        );
+      });
+
+      // avoid duplicate
+      if (
+        activityIdsRef.current.has(activity.id) ||
+        realtimeActivitiesRef.current.has(activity.id)
+      ) {
+        return;
+      }
+      
+      // ref to avoid receive old response from sooner event
+      const sequence = ++realtimeSequenceRef.current;
+
+      realtimeActivitiesRef.current.set(activity.id, {
+        activity,
+        sequence,
+      });
+
+      if (
+        realtimeActivitiesRef.current.size >
+        MAX_REALTIME_CACHE_SIZE
+      ) {
+        const oldestActivityId =
+          realtimeActivitiesRef.current.keys().next().value;
+
+        if (oldestActivityId) {
+          realtimeActivitiesRef.current.delete(oldestActivityId);
+        }
+      }
+
+      const currentState = realtimeStateRef.current;
+
+      if (!matchesCurrentFilters(activity, currentState)) {
+        return;
+      }
+
+      activityIdsRef.current.add(activity.id);
+
+      setPagination((currentPagination) =>
+        buildPagination(currentPagination, 1)
+      );
+
+      // if current page is 1, reload activities
+      if (currentState.page === 1) {
+        setActivities((currentActivities) =>
+          [
+            activity,
+            ...currentActivities.filter(
+              (item) => item.id !== activity.id
+            ),
+          ].slice(0, PAGE_SIZE)
+        );
+      } else {
+        // refetch to change pagination info
+        setActivityRefreshKey((currentKey) => currentKey + 1);
+      }
+    };
+
+    const handleConnectError = (error: Error) => {
+      console.error("Activity socket connection error:", error);
+    };
+
+    // Event connect cũng chạy lại sau khi Socket.IO reconnect,
+    // vì vậy client sẽ tự join lại workspace room.
+    socket.on("connect", joinWorkspace);
+    socket.on("connect_error", handleConnectError);
+    socket.on(
+      "activity_log:created",
+      handleActivityCreated
+    );
+
+    socket.connect();
+
+    return () => {
+      socket.off("connect", joinWorkspace);
+      socket.off("connect_error", handleConnectError);
+      socket.off(
+        "activity_log:created",
+        handleActivityCreated
+      );
+
+      if (!socket.connected) {
+        socket.disconnect();
+        return;
+      }
+
+      const disconnectTimer = window.setTimeout(() => {
+        socket.disconnect();
+      }, 500);
+
+      socket.emit(
+        "workspace:leave",
+        { workspaceId },
+        (response) => {
+          window.clearTimeout(disconnectTimer);
+
+          if (!response.success) {
+            console.error(
+              "Failed to leave workspace socket room:",
+              response.error
+            );
+          }
+
+          socket.disconnect();
+        }
+      );
+    };
+  }, [workspaceId]);
 
   const handleActorIdsChange = (actorIds: string[]) => {
     setSelectedActorIds(actorIds);
