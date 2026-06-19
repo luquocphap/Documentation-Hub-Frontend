@@ -17,6 +17,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import DocumentPage from './pages/DocumentPage'
 import { ActivityLogPage } from './pages/ActivityLogsPage'
 import { useAuthStore } from './stores/useAuthStore'
+import { WorkspaceProtectedRoute } from './components/WorkspaceProtectedRoute'
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth)
@@ -39,11 +40,14 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path='/dashboard' element={<DashboardPage />} />
+          <Route path="/document/:documentId" element={<DocumentPage />} />
+        </Route>
+
+        <Route element={<WorkspaceProtectedRoute />}>
           <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
           <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
           <Route path="/workspaces/:workspaceId/members" element={<WorkspaceMembersPage />} />
           <Route path='/workspaces/:workspaceId/activity-logs' element={<ActivityLogPage />} />
-          <Route path="/document/:documentId" element={<DocumentPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

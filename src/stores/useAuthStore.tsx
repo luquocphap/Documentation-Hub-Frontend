@@ -15,6 +15,7 @@ interface AuthState {
 }
 
 let authInitializationPromise: Promise<void> | null = null;
+let authStateRevision = 0;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   // Khởi tạo từ localStorage → không bị reset khi refresh trang
@@ -30,18 +31,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return authInitializationPromise;
     }
 
+    const initializationRevision = authStateRevision;
+
     authInitializationPromise = (async () => {
       try {
         await authApi.getInfo({
           suppressAuthRedirect: true,
         });
+
+        if (initializationRevision !== authStateRevision) {
+          return;
+        }
+
         markAuthenticatedSession();
         set({ isAuthenticated: true });
       } catch {
+        if (initializationRevision !== authStateRevision) {
+          return;
+        }
+
         clearAuthenticatedSession();
         set({ isAuthenticated: false });
       } finally {
-        set({ isAuthChecking: false });
+        if (initializationRevision === authStateRevision) {
+          set({ isAuthChecking: false });
+        }
+
         authInitializationPromise = null;
       }
     })();
@@ -50,6 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: () => {
+    authStateRevision += 1;
     markAuthenticatedSession();
     set({
       isAuthenticated: true,
@@ -63,6 +79,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // ignore — vẫn logout client dù server lỗi
     } finally {
+      authStateRevision += 1;
       clearAuthenticatedSession();
       set({
         isAuthenticated: false,

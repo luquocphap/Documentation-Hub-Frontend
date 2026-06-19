@@ -11,11 +11,17 @@ export class RegisterInput {
     email!: string;
     password!: string;
     fullName!: string;
+    redirectTo?: string;
 }
 
 export class LoginInput {
     email!: string;
     password!: string;
+}
+
+export interface ResendVerificationInput {
+    email: string;
+    redirectTo?: string;
 }
 
 export interface IMemberCandidateItem {
@@ -55,12 +61,18 @@ export const authApi = {
         return axiosInstance.post('/auth/refresh-token');
     },
 
-    verifyEmail: (token: string): Promise<ApiResponse<any>> => {
+    verifyEmail: (token: string): Promise<ApiResponse<unknown>> => {
         return axiosInstance.get('/auth/verify-email', {
             params: {
                 token: token
             }
         });
+    },
+
+    resendVerification: (
+        data: ResendVerificationInput
+    ): Promise<ApiResponse<unknown>> => {
+        return axiosInstance.post('/auth/resend-verification', data);
     },
     
     logout: (): Promise<ApiResponse<any>> => {

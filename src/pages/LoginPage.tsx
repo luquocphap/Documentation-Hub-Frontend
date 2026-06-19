@@ -4,9 +4,13 @@ import { authApi, type LoginInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { CustomInput } from "@/components/CustomInput";
+import {
+  buildWorkspaceRedirectQuery,
+  normalizeWorkspaceRedirect,
+} from "@/lib/workspaceRedirect";
 
 
 export default function LoginPage() {
@@ -21,6 +25,11 @@ export default function LoginPage() {
 
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = normalizeWorkspaceRedirect(
+    searchParams.get("redirectTo")
+  );
+  const redirectQuery = buildWorkspaceRedirectQuery(redirectTo);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -67,7 +76,9 @@ export default function LoginPage() {
     try {
       await authApi.login(formData);
       login();
-      navigate('/dashboard')
+      navigate(redirectTo ?? "/dashboard", {
+        replace: true,
+      });
     } catch (error: any) {
       console.log({ error });
       // Xử lý lỗi trả về từ Backend
@@ -130,9 +141,12 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-primary-cyan mt-4">
           New to Folio?{" "}
-          <a href="/register" className="font-semibold text-foreground hover:underline">
+          <Link
+            to={`/register${redirectQuery}`}
+            className="font-semibold text-foreground hover:underline"
+          >
             Sign Up
-          </a>
+          </Link>
         </p>
       </div>
     </AuthLayout>
