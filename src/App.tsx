@@ -1,4 +1,5 @@
 import './App.css'
+import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import RegisterPage from './pages/RegisterPage'
 import LoginPage from './pages/LoginPage'
@@ -15,8 +16,15 @@ import UnauthorizedPage from './pages/UnauthorizedPage'
 import NotFoundPage from './pages/NotFoundPage'
 import DocumentPage from './pages/DocumentPage'
 import { ActivityLogPage } from './pages/ActivityLogsPage'
+import { useAuthStore } from './stores/useAuthStore'
 
 function App() {
+  const initializeAuth = useAuthStore((state) => state.initializeAuth)
+
+  useEffect(() => {
+    void initializeAuth()
+  }, [initializeAuth])
+
   return (
     <BrowserRouter>
       <Routes>

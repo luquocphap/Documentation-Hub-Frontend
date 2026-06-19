@@ -1,4 +1,5 @@
 import axiosInstance from "./axiosInstance";
+import type { AxiosRequestConfig } from "axios";
 
 export interface ApiResponse<T = any> {
     statusCode: number;
@@ -33,6 +34,10 @@ export interface SearchCandidateParams{
   documentId?: string
 }
 
+export interface AuthRequestConfig extends AxiosRequestConfig {
+    suppressAuthRedirect?: boolean;
+}
+
 export const authApi = {
     login: (data: LoginInput): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/login', data);
@@ -42,8 +47,8 @@ export const authApi = {
         return axiosInstance.post('/auth/register', data);
     },
 
-    getInfo: (): Promise<ApiResponse<any>> => {
-        return axiosInstance.get('/auth/user-info');
+    getInfo: (config?: AuthRequestConfig): Promise<ApiResponse<any>> => {
+        return axiosInstance.get('/auth/user-info', config);
     },
 
     refreshToken: (): Promise<ApiResponse<any>> => {
@@ -59,7 +64,9 @@ export const authApi = {
     },
     
     logout: (): Promise<ApiResponse<any>> => {
-        return axiosInstance.post('/auth/logout');
+        return axiosInstance.post('/auth/logout', undefined, {
+            suppressAuthRedirect: true,
+        } as AuthRequestConfig);
     },
 
     searchCandidates: (
