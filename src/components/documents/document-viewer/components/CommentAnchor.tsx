@@ -32,7 +32,7 @@ export function CommentAnchor({ position, comment, onClick }: CommentAnchorProps
     <div
       style={{
         position: "absolute",
-        top: position.top - 30,
+        top: position.top,
         left: position.left - 5,
         zIndex: 40,
       }}
@@ -42,7 +42,7 @@ export function CommentAnchor({ position, comment, onClick }: CommentAnchorProps
       <button
         type="button"
         aria-label="Document comment"
-        className="rounded-full bg-white p-1 border border-[#E5E5E5] shadow-sm cursor-pointer"
+        className="rounded-full rounded-bl-md bg-white p-1 border border-[#E5E5E5] shadow-sm cursor-pointer"
         onClick={(event) => {
           event.stopPropagation();
           onClick(comment);
