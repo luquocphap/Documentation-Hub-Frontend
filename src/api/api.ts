@@ -475,8 +475,8 @@ export interface IDocumentAnnotationResponse {
   annotationId: string;
   type: string;
   pageNumber: number;
-  quads: Record<string, any>[];
-  rect: Record<string, any> | null;
+  quads: Record<string, unknown>[];
+  rect: Record<string, unknown> | null;
   contents: string;
   color: string;
   opacity: number;
@@ -500,7 +500,7 @@ export interface IDocumentCommentResponse {
   status: 'OPEN' | 'RESOLVED';
   annotationRef: IDocumentAnnotationResponse | string | null; 
   annotationId: string | null;
-  replyCount: Number;
+  replyCount: number;
   owner: ICommentCreator;
   created_at: string;
   updated_at: string;

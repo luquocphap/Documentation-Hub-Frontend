@@ -9,6 +9,13 @@ import { toast } from "sonner";
 import { Loader2, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { APRYSE_LICENSE_KEY, CLOUDINARY_CLOUD_NAME } from "@/lib/constant";
+import {
+  createDocumentSocket,
+  SOCKET_EVENTS,
+  type CommentDeletedPayload,
+  type DocumentCommentRealtimePayload,
+  type ReplyCreatedSummaryPayload,
+} from "@/lib/socket";
 import { AddCommentButton } from "./components/AddCommentButton";
 import { CommentAnchor } from "./components/CommentAnchor";
 import { CommentInputBox } from "./components/CommentInputBox";
@@ -33,8 +40,10 @@ const COMMENT_FLOAT_FINE_TUNE = { x: -70, y: -170 };
 const COMMENT_FLOAT_PLACEMENT_OFFSET: Record<FloatingPlacement, { x: number; y: number }> = {
   button: { x: 8, y: -36 },
   input: { x: 170, y: -50 },
-  anchor: { x: 0, y: -30 },
+  anchor: { x: 0, y: -60 },
 };
+
+type AnchorUpdateMode = "replace" | "merge";
 
 export function DocumentViewer({
   documentId,
@@ -92,21 +101,39 @@ export function DocumentViewer({
   const inputRef = useRef<HTMLInputElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
   const [inputWidth, setInputWidth] = useState<number>(0);
+  const anchorRecalculationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     commentsRef.current = comments;
   }, [comments]);
 
-  const handleReplyCreated = useCallback((commentId: string) => {
-    setComments((prev) => prev.map((comment) => {
-      if (comment._id !== commentId) return comment;
-      return {
-        ...comment,
-        replyCount: Number(comment.replyCount || 0) + 1,
-      };
-    }));
-  }, []);
+  // avoid duplicate response from both REST and SOCKET
+  const appendCommentIfMissing = useCallback((
+    comment: IDocumentCommentResponse
+  ) => {
+    if (
+      commentsRef.current.some(
+        (currentComment) => currentComment._id === comment._id
+      )
+    ) {
+      return false;
+    }
 
+    commentsRef.current = [...commentsRef.current, comment];
+    setComments((currentComments) => {
+      if (
+        currentComments.some(
+          (currentComment) => currentComment._id === comment._id
+        )
+      ) {
+        return currentComments;
+      }
+
+      return [...currentComments, comment];
+    });
+
+    return true;
+  }, []);
 
   useEffect(() => {
     isContentEditModeRef.current = isContentEditMode;
@@ -116,7 +143,7 @@ export function DocumentViewer({
     onViewerInitRef.current = onViewerInit;
   }, [onViewerInit]);
 
-
+  // switch viewer to select-text tool
   const setDefaultViewerTool = (dv: ToolModeViewer) => {
     try {
       const textSelectToolName = window.Core?.Tools?.ToolNames?.TEXT_SELECT ?? "TextSelect";
@@ -126,6 +153,7 @@ export function DocumentViewer({
     try { dv.setToolMode(dv.getTool("AnnotationEdit")); } catch { /* ignore */ }
   };
 
+  // normalize all format quads to array format
   const normalizeQuadsForPage = useCallback((rawQuads: unknown, pageNumber: number): unknown[] => {
     if (Array.isArray(rawQuads)) return rawQuads;
     if (!rawQuads || typeof rawQuads !== "object") return [];
@@ -142,6 +170,7 @@ export function DocumentViewer({
     });
   }, []);
 
+  // check 8-coor like quads
   const isQuadLike = (quad: unknown): quad is QuadLike => {
     if (!quad || typeof quad !== "object") return false;
     const candidate = quad as Partial<Record<keyof QuadLike, unknown>>;
@@ -149,27 +178,44 @@ export function DocumentViewer({
       .every((key) => typeof candidate[key as keyof QuadLike] === "number");
   };
 
+  // get annotation object in comment
   const getCommentAnnotation = useCallback((comment: IDocumentCommentResponse): IDocumentAnnotationResponse | null => {
     if (!comment.annotationRef || typeof comment.annotationRef === "string") return null;
     return comment.annotationRef;
   }, []);
 
   const handleCommentUpdated = useCallback((updatedComment: IDocumentCommentResponse) => {
-    setComments((prev) => prev.map((comment) => (
+    const replaceComment = (
+      sourceComments: IDocumentCommentResponse[]
+    ) => sourceComments.map((comment) => (
       comment._id === updatedComment._id ? updatedComment : comment
-    )));
+    ));
+
+    commentsRef.current = replaceComment(commentsRef.current);
+    setComments(replaceComment);
   }, []);
 
-  const handleCommentDeleted = useCallback((commentId: string) => {
+  const handleCommentDeleted = useCallback((
+    commentId: string,
+    realtimeAnnotationId?: string | null
+  ) => {
     const deletedComment = commentsRef.current.find((comment) => comment._id === commentId);
     const persistedAnnotation = deletedComment ? getCommentAnnotation(deletedComment) : null;
-    const annotationId =
-      persistedAnnotation?.annotationId ||
-      deletedComment?.annotationId ||
-      Object.entries(annotationToCommentRef.current)
-        .find(([, mappedCommentId]) => mappedCommentId === commentId)?.[0];
+    const mappedAnnotationIds = Object.entries(
+      annotationToCommentRef.current
+    )
+      .filter(([, mappedCommentId]) => mappedCommentId === commentId)
+      .map(([annotationId]) => annotationId);
+    const annotationIds = new Set(
+      [
+        realtimeAnnotationId,
+        persistedAnnotation?.annotationId,
+        deletedComment?.annotationId,
+        ...mappedAnnotationIds,
+      ].filter((annotationId): annotationId is string => Boolean(annotationId))
+    );
 
-    if (annotationId) {
+    for (const annotationId of annotationIds) {
       try {
         const annotationManager = docViewerRef.current?.getAnnotationManager();
         const annotation = annotationManager?.getAnnotationById(annotationId);
@@ -181,6 +227,9 @@ export function DocumentViewer({
       delete annotationToCommentRef.current[annotationId];
     }
 
+    commentsRef.current = commentsRef.current.filter(
+      (comment) => comment._id !== commentId
+    );
     setComments((prev) => prev.filter((comment) => comment._id !== commentId));
     setAnchorPositions((prev) => {
       const next = { ...prev };
@@ -189,6 +238,31 @@ export function DocumentViewer({
     });
     setActiveCommentId((currentId) => currentId === commentId ? null : currentId);
   }, [getCommentAnnotation]);
+
+  const setCommentReplyCount = useCallback((
+    commentId: string,
+    replyCount: number
+  ) => {
+    const normalizedReplyCount = Math.max(
+      0,
+      Number(replyCount) || 0
+    );
+    const replaceReplyCount = (
+      sourceComments: IDocumentCommentResponse[]
+    ) => sourceComments.map((comment) => (
+      comment._id === commentId
+        ? {
+            ...comment,
+            replyCount: normalizedReplyCount,
+          }
+        : comment
+    ));
+
+    commentsRef.current = replaceReplyCount(
+      commentsRef.current
+    );
+    setComments(replaceReplyCount);
+  }, []);
 
   const parseAnnotationColor = useCallback((color?: string | null) => {
     const fallback = { red: 255, green: 214, blue: 10 };
@@ -265,6 +339,7 @@ export function DocumentViewer({
         { x: quad.x4, y: quad.y4 },
       ];
       const contentPoints = quadPoints.map((point) => {
+        // switch to scrollview coordinate
         return toScrollContentPoint(displayMode.pageToWindow(point, selection.pageNumber));
       });
       const xs = contentPoints.map((point) => point.x);
@@ -304,15 +379,79 @@ export function DocumentViewer({
     selection: SelectedTextInfo,
     placement: FloatingPlacement
   ) => {
+    // get position at scrollview coordinate
     return getApryseSelectionPosition(selection, placement);
   }, [getApryseSelectionPosition]);
 
-  const hydrateLoadedComments = useCallback(async (loadedComments: IDocumentCommentResponse[]) => {
+  const calculateCommentAnchorPositions = useCallback(
+    (
+      sourceComments: IDocumentCommentResponse[],
+      mode: AnchorUpdateMode = "replace"
+    ) => {
+      const nextPositions: Record<string, FloatPosition> = {};
+
+      for (const comment of sourceComments) {
+        const persistedAnnotation = getCommentAnnotation(comment);
+        const pageNumber =
+          persistedAnnotation?.pageNumber ?? comment.pageNumber;
+        const quads = persistedAnnotation?.quads ?? [];
+
+        if (!Array.isArray(quads) || quads.length === 0) {
+          continue;
+        }
+
+        const position = getFloatingPosition(
+          {
+            quads,
+            text:
+              comment.selectedText ||
+              persistedAnnotation?.contents ||
+              comment.text,
+            pageNumber,
+          },
+          "anchor"
+        );
+
+        if (position) {
+          nextPositions[comment._id] = position;
+        }
+      }
+
+      setAnchorPositions((currentPositions) =>
+        mode === "merge"
+          ? { ...currentPositions, ...nextPositions }
+          : nextPositions
+      );
+    },
+    [getCommentAnnotation, getFloatingPosition]
+  );
+
+  const scheduleAnchorRecalculation = useCallback(() => {
+    if (anchorRecalculationFrameRef.current !== null) {
+      return;
+    }
+
+    anchorRecalculationFrameRef.current =
+      window.requestAnimationFrame(() => {
+        anchorRecalculationFrameRef.current =
+          window.requestAnimationFrame(() => {
+            anchorRecalculationFrameRef.current = null;
+            calculateCommentAnchorPositions(
+              commentsRef.current,
+              "replace"
+            );
+          });
+      });
+  }, [calculateCommentAnchorPositions]);
+
+  const hydrateLoadedComments = useCallback(async (
+    loadedComments: IDocumentCommentResponse[],
+    anchorMode: AnchorUpdateMode = "replace"
+  ) => {
     const dv = docViewerRef.current;
     if (!dv || !window.Core) return;
 
     const annotationManager = dv.getAnnotationManager();
-    const nextAnchorPositions: Record<string, FloatPosition> = {};
     const { Annotations } = window.Core;
 
     for (const comment of loadedComments) {
@@ -346,20 +485,17 @@ export function DocumentViewer({
         annotationManager.addAnnotation(annotation);
         await annotationManager.drawAnnotationsFromList(annotation);
       }
-
-      const anchorPos = getFloatingPosition({
-        quads,
-        text: comment.selectedText || persistedAnnotation?.contents || comment.text,
-        pageNumber,
-      }, "anchor");
-
-      if (anchorPos) {
-        nextAnchorPositions[comment._id] = anchorPos;
-      }
     }
 
-    setAnchorPositions(nextAnchorPositions);
-  }, [getCommentAnnotation, getFloatingPosition, parseAnnotationColor]);
+    calculateCommentAnchorPositions(
+      loadedComments,
+      anchorMode
+    );
+  }, [
+    calculateCommentAnchorPositions,
+    getCommentAnnotation,
+    parseAnnotationColor,
+  ]);
 
   // Close all floating UIs
   const closeFloatingUI = useCallback(() => {
@@ -369,7 +505,7 @@ export function DocumentViewer({
     setCommentDraft("");
   }, []);
 
-  // Open add-comment input (called from button click or toolbar button)
+  // Compute position of Open add-comment input (called from button click or toolbar button)
   const openCommentInput = useCallback((
     fallbackPosition?: FloatPosition,
     preferFallback = false,
@@ -414,13 +550,176 @@ export function DocumentViewer({
     try {
       const res = await commentApi.getByDocumentId(documentId);
       const loadedComments = res.data;
-      commentsRef.current = loadedComments;
-      setComments(loadedComments);
-      await hydrateLoadedComments(loadedComments);
+      const loadedCommentIds = new Set(
+        loadedComments.map((comment) => comment._id)
+      );
+      const realtimeComments = commentsRef.current.filter(
+        (comment) =>
+          comment.documentId === documentId &&
+          !loadedCommentIds.has(comment._id)
+      );
+      const mergedComments = [
+        ...loadedComments,
+        ...realtimeComments,
+      ];
+
+      commentsRef.current = mergedComments;
+      setComments(mergedComments);
+      await hydrateLoadedComments(mergedComments);
     } catch (err) {
       console.warn("Failed to load comments:", err);
     }
   }, [documentId, hydrateLoadedComments]);
+
+  useEffect(() => {
+    if (!documentId) return;
+
+    const socket = createDocumentSocket();
+
+    const joinDocument = () => {
+      socket.emit(
+        SOCKET_EVENTS.JOIN_DOCUMENT,
+        { documentId },
+        (response) => {
+          if (!response.success) {
+            console.error(
+              "Failed to join document socket room:",
+              response.error
+            );
+          }
+        }
+      );
+    };
+
+    const handleCommentCreated = (
+      payload: DocumentCommentRealtimePayload
+    ) => {
+      if (payload.documentId !== documentId) {
+        return;
+      }
+
+      const comment: IDocumentCommentResponse = payload;
+      const wasAdded = appendCommentIfMissing(comment);
+
+      if (wasAdded) {
+        void hydrateLoadedComments([comment], "merge");
+      }
+    };
+
+    const handleRealtimeCommentUpdated = (
+      payload: DocumentCommentRealtimePayload
+    ) => {
+      if (payload.documentId !== documentId) {
+        return;
+      }
+
+      handleCommentUpdated(payload);
+    };
+
+    const handleRealtimeCommentDeleted = (
+      payload: CommentDeletedPayload
+    ) => {
+      if (payload.documentId !== documentId) {
+        return;
+      }
+
+      handleCommentDeleted(
+        payload.commentId,
+        payload.annotationId
+      );
+    };
+
+    const handleReplyCreatedSummary = (
+      payload: ReplyCreatedSummaryPayload
+    ) => {
+      if (payload.documentId !== documentId) {
+        return;
+      }
+
+      setCommentReplyCount(
+        payload.commentId,
+        payload.replyCount
+      );
+    };
+
+    const handleConnectError = (error: Error) => {
+      console.error("Document socket connection error:", error);
+    };
+
+    socket.on("connect", joinDocument);
+    socket.on("connect_error", handleConnectError);
+    socket.on(
+      SOCKET_EVENTS.COMMENT_CREATED,
+      handleCommentCreated
+    );
+    socket.on(
+      SOCKET_EVENTS.COMMENT_UPDATED,
+      handleRealtimeCommentUpdated
+    );
+    socket.on(
+      SOCKET_EVENTS.COMMENT_DELETED,
+      handleRealtimeCommentDeleted
+    );
+    socket.on(
+      SOCKET_EVENTS.REPLY_CREATED_SUMMARY,
+      handleReplyCreatedSummary
+    );
+    socket.connect();
+
+    return () => {
+      socket.off("connect", joinDocument);
+      socket.off("connect_error", handleConnectError);
+      socket.off(
+        SOCKET_EVENTS.COMMENT_CREATED,
+        handleCommentCreated
+      );
+      socket.off(
+        SOCKET_EVENTS.COMMENT_UPDATED,
+        handleRealtimeCommentUpdated
+      );
+      socket.off(
+        SOCKET_EVENTS.COMMENT_DELETED,
+        handleRealtimeCommentDeleted
+      );
+      socket.off(
+        SOCKET_EVENTS.REPLY_CREATED_SUMMARY,
+        handleReplyCreatedSummary
+      );
+
+      if (!socket.connected) {
+        socket.disconnect();
+        return;
+      }
+
+      const disconnectTimer = window.setTimeout(() => {
+        socket.disconnect();
+      }, 500);
+
+      socket.emit(
+        SOCKET_EVENTS.LEAVE_DOCUMENT,
+        { documentId },
+        (response) => {
+          window.clearTimeout(disconnectTimer);
+
+          if (!response.success) {
+            console.error(
+              "Failed to leave document socket room:",
+              response.error
+            );
+          }
+
+          socket.disconnect();
+        }
+      );
+    };
+  }, [
+    documentId,
+    appendCommentIfMissing,
+    handleCommentDeleted,
+    handleCommentUpdated,
+    hydrateLoadedComments,
+    setCommentReplyCount,
+  ]);
 
   // Submit new comment
   const handleSubmitComment = async () => {
@@ -482,7 +781,7 @@ export function DocumentViewer({
 
       const newComment = res.data;
       annotationToCommentRef.current[localAnnotationId] = newComment._id;
-      setComments((prev) => [...prev, newComment]);
+      appendCommentIfMissing(newComment);
 
       const anchorPos = getFloatingPosition(selection, "anchor");
       if (anchorPos) {
@@ -567,7 +866,21 @@ export function DocumentViewer({
           closeFloatingUI();
         });
 
+        const handleViewerLayoutUpdated = () => {
+          scheduleAnchorRecalculation();
+        };
+
+        docViewer.addEventListener(
+          "zoomUpdated",
+          handleViewerLayoutUpdated
+        );
+        docViewer.addEventListener(
+          "pageComplete",
+          handleViewerLayoutUpdated
+        );
+
         docViewer.addEventListener("documentLoaded", () => {
+          commentsRef.current = [];
           setComments([]);
           setActiveCommentId(null);
           setIsCommentPanelOpen(false);
@@ -584,7 +897,9 @@ export function DocumentViewer({
           setDefaultViewerTool(docViewer);
           setIsLoading(false);
           // Load existing comments
-          loadComments();
+          void loadComments().finally(() => {
+            scheduleAnchorRecalculation();
+          });
         });
 
         docViewer.addEventListener("pageNumberUpdated", (page: number) => setCurrentPage(page));
@@ -663,13 +978,25 @@ export function DocumentViewer({
     initCoreViewer();
 
     return () => {
+      if (anchorRecalculationFrameRef.current !== null) {
+        window.cancelAnimationFrame(
+          anchorRecalculationFrameRef.current
+        );
+        anchorRecalculationFrameRef.current = null;
+      }
+
       if (docViewerRef.current) {
         try { docViewerRef.current.getContentEditManager?.().endContentEditMode?.(); } catch { /* ignore */ }
         docViewerRef.current.dispose?.();
         docViewerRef.current = null;
       }
     };
-  }, [publicId, closeFloatingUI, loadComments]);
+  }, [
+    publicId,
+    closeFloatingUI,
+    loadComments,
+    scheduleAnchorRecalculation,
+  ]);
 
   // Page navigation
   const goToPage = (page: number) => {
@@ -922,7 +1249,6 @@ export function DocumentViewer({
             comment={activeComment}
             placement={activeCommentSource}
             onClose={() => setActiveCommentId(null)}
-            onReplyCreated={handleReplyCreated}
             onCommentUpdated={handleCommentUpdated}
             onCommentDeleted={handleCommentDeleted}
           />

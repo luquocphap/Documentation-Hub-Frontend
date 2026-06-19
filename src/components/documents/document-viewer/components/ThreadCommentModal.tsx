@@ -23,7 +23,6 @@ interface RightCommentPanelProps {
   comment: IDocumentCommentResponse;
   placement?: "anchor" | "panel";
   onClose: () => void;
-  onReplyCreated?: (commentId: string) => void;
   onReplyDeleted?: (commentId: string) => void;
   onCommentUpdated?: (comment: IDocumentCommentResponse) => void;
   onCommentDeleted?: (commentId: string) => void;
@@ -315,7 +314,6 @@ export function ThreadCommentModal({
   comment,
   placement = "anchor",
   onClose,
-  onReplyCreated,
   onCommentUpdated,
   onCommentDeleted,
 }: RightCommentPanelProps) {
@@ -409,7 +407,6 @@ export function ThreadCommentModal({
       const res = await commentApi.createReply(comment._id, { text: draft });
       setReplies((prev) => [...prev, res.data]);
       setReplyDraft("");
-      onReplyCreated?.(comment._id);
       requestAnimationFrame(() => inputRef.current?.focus());
     } catch (error) {
       console.error("Failed to create comment reply:", error);

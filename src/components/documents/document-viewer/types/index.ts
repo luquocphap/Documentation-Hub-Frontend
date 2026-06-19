@@ -28,6 +28,7 @@ export interface FloatPosition {
 export type FloatingPlacement = "button" | "input" | "anchor";
 export type CommentCoordinateMode = "content" | "window" | "viewer";
 
+// area of annotation (highligt comment) save in db
 export interface QuadLike {
   x1: number;
   y1: number;
@@ -90,6 +91,11 @@ export interface ApryseDisplayModeManager {
 
 export interface ApryseDocumentViewer extends ToolModeViewer {
   addEventListener(event: "documentLoaded", callback: () => void): void;
+  addEventListener(event: "zoomUpdated", callback: (zoom: number) => void): void;
+  addEventListener(
+    event: "pageComplete",
+    callback: (pageNumber: number, canvas: HTMLCanvasElement) => void
+  ): void;
   addEventListener(event: "pageNumberUpdated", callback: (page: number) => void): void;
   addEventListener(event: "textSelected", callback: (quads: unknown[], text: string, pageNumber: number) => void): void;
   dispose?: () => void;
