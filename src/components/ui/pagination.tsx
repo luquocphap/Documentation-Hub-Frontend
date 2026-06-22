@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/Button"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
@@ -35,7 +35,8 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 
 type PaginationLinkProps = {
   isActive?: boolean
-} & Pick<React.ComponentProps<typeof Button>, "size"> &
+  size?: React.ComponentProps<typeof Button>["size"]
+} &
   React.ComponentProps<"a">
 
 function PaginationLink({
@@ -64,12 +65,13 @@ function PaginationLink({
 function PaginationPrevious({
   className,
   text = "Previous",
+  size = "default",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
       aria-label="Go to previous page"
-      size="default"
+      size={size}
       className={cn("pl-1.5!", className)}
       {...props}
     >
@@ -82,12 +84,13 @@ function PaginationPrevious({
 function PaginationNext({
   className,
   text = "Next",
+  size = "default",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
       aria-label="Go to next page"
-      size="default"
+      size={size}
       className={cn("pr-1.5!", className)}
       {...props}
     >

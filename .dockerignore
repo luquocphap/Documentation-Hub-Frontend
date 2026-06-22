@@ -1,0 +1,13 @@
+node_modules
+dist
+public/lib
+
+.git
+.github
+.vscode
+
+.env
+.env.*
+!.env.example
+
+*.log

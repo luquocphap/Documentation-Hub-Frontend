@@ -67,6 +67,7 @@ export function ActivityLogPagination({
           <PaginationPrevious
             href="#"
             text=""
+            size="default"
             aria-disabled={isPreviousDisabled}
             tabIndex={isPreviousDisabled ? -1 : 0}
             className={isPreviousDisabled ? "pointer-events-none opacity-50" : ""}
@@ -84,6 +85,7 @@ export function ActivityLogPagination({
             {typeof entry === "number" ? (
               <PaginationLink
                 href="#"
+                size="icon"
                 isActive={entry === page}
                 onClick={(event) => {
                   event.preventDefault();
@@ -102,6 +104,7 @@ export function ActivityLogPagination({
           <PaginationNext
             href="#"
             text=""
+            size="default"
             aria-disabled={isNextDisabled}
             tabIndex={isNextDisabled ? -1 : 0}
             className={isNextDisabled ? "pointer-events-none opacity-50" : ""}

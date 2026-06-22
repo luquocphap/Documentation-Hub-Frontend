@@ -24,5 +24,7 @@ dist-ssr
 *.sw?
 
 .env
+.env.fe
+.env.be
 
 public/lib

@@ -15,7 +15,7 @@ interface DocumentListProps {
   workspace?: IWorkspaceDetailResponse | null;
 }
 
-export function DocumentList({ documents, setDocuments, currentUser, workspace }: DocumentListProps) {
+export function DocumentList({ documents, setDocuments, currentUser }: DocumentListProps) {
   const navigate = useNavigate();
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
   const { workspaceId } = useParams();
