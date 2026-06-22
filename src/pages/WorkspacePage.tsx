@@ -30,14 +30,18 @@ export default function WorkspacePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !workspaceId) return;
+  const handlePdfUpload = (file: File) => {
+    if (!workspaceId) return;
+
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      toast.error("Only PDF files are supported.");
+      return;
+    }
 
     // Validate size (20MB)
     if (file.size > 20 * 1024 * 1024) {
       toast.error("File size exceeds 20MB limit.");
-      e.target.value = ""; // Xoá file đã chọn để được chọn lại
       return;
     }
 
@@ -61,6 +65,13 @@ export default function WorkspacePage() {
       ),
       { duration: 999999, position: 'bottom-right' }
     );
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handlePdfUpload(file);
+    }
 
     // Xóa input value để mở file explorer với cùng 1 file 2 lần không bị lỗi
     e.target.value = "";
@@ -183,7 +194,11 @@ export default function WorkspacePage() {
 
             {/* Render Empty State OR Document List */}
             {documents.length === 0 ? (
-               <EmptyWorkspace />
+               <EmptyWorkspace
+                 onUploadClick={() => fileInputRef.current?.click()}
+                 onFileDrop={handlePdfUpload}
+                 setIsMdModalOpen={setIsMdModalOpen}
+               />
             ) : (
                <DocumentList 
                  documents={documents} 
