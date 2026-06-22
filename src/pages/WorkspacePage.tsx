@@ -162,7 +162,7 @@ export default function WorkspacePage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" className="gap-1.5 px-3 outline-none">
+                  <Button size="sm" className="gap-1.5 px-2.5 py-2 outline-none text-sm font-medium">
                     <FileText className="w-4 h-4" /> Create document
                   </Button>
                 </DropdownMenuTrigger>
