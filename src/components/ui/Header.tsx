@@ -4,6 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import avatar from "@/assets/images/avatar.png";
 import { useState } from "react";
 import { SearchDocumentsModal } from "../SearchDocumentModal";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
+import { SignOutIcon } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export interface HeaderUser {
   name: string;
@@ -44,6 +48,20 @@ export function Header({
   className = "",
 }: HeaderProps) {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+    await logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <header className={`w-full h-16 bg-white border-b border-gray-200 flex items-center ${className}`}>
       {/* Khối Logo: Giữ w-64 và thêm shrink-0 */}
@@ -88,18 +106,32 @@ export function Header({
               <HelpCircle size={16}/>
             </button>
 
-            <button onClick={onUserClick} className="w-8 h-8 rounded-md overflow-hidden focus:outline-none shrink-0">
-              <Avatar className="rounded-md">
-                <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-                <AvatarFallback className="rounded-md">
-                  <img 
-                    src={avatar} 
-                    alt="Default Avatar" 
-                    className="w-full h-full object-cover" 
-                  />
-                </AvatarFallback>
-              </Avatar>
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild >
+                <button className="w-8 h-8 rounded-md overflow-hidden focus:outline-none shrink-0">
+                  <Avatar className="rounded-md">
+                    <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+                    <AvatarFallback className="rounded-md">
+                      <img
+                        src={avatar}
+                        alt="Default Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg p-1">
+                <DropdownMenuItem
+                  className="p-2 cursor-pointer rounded-lg text-sm font-medium"
+                  disabled={isLoggingOut}
+                  onClick={handleLogout}
+                >
+                  <SignOutIcon className="w-3 h-3" /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}

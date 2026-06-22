@@ -1,4 +1,5 @@
 import axiosInstance from "./axiosInstance";
+import type { AxiosRequestConfig } from "axios";
 
 export interface ApiResponse<T = any> {
     statusCode: number;
@@ -10,11 +11,17 @@ export class RegisterInput {
     email!: string;
     password!: string;
     fullName!: string;
+    redirectTo?: string;
 }
 
 export class LoginInput {
     email!: string;
     password!: string;
+}
+
+export interface ResendVerificationInput {
+    email: string;
+    redirectTo?: string;
 }
 
 export interface IMemberCandidateItem {
@@ -33,6 +40,10 @@ export interface SearchCandidateParams{
   documentId?: string
 }
 
+export interface AuthRequestConfig extends AxiosRequestConfig {
+    suppressAuthRedirect?: boolean;
+}
+
 export const authApi = {
     login: (data: LoginInput): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/login', data);
@@ -42,24 +53,32 @@ export const authApi = {
         return axiosInstance.post('/auth/register', data);
     },
 
-    getInfo: (): Promise<ApiResponse<any>> => {
-        return axiosInstance.get('/auth/user-info');
+    getInfo: (config?: AuthRequestConfig): Promise<ApiResponse<any>> => {
+        return axiosInstance.get('/auth/user-info', config);
     },
 
     refreshToken: (): Promise<ApiResponse<any>> => {
         return axiosInstance.post('/auth/refresh-token');
     },
 
-    verifyEmail: (token: string): Promise<ApiResponse<any>> => {
+    verifyEmail: (token: string): Promise<ApiResponse<unknown>> => {
         return axiosInstance.get('/auth/verify-email', {
             params: {
                 token: token
             }
         });
     },
+
+    resendVerification: (
+        data: ResendVerificationInput
+    ): Promise<ApiResponse<unknown>> => {
+        return axiosInstance.post('/auth/resend-verification', data);
+    },
     
     logout: (): Promise<ApiResponse<any>> => {
-        return axiosInstance.post('/auth/logout');
+        return axiosInstance.post('/auth/logout', undefined, {
+            suppressAuthRedirect: true,
+        } as AuthRequestConfig);
     },
 
     searchCandidates: (

@@ -1,11 +1,19 @@
 import hero from "@/assets/images/verify-email-hero.png";
+import { Loader2 } from "lucide-react";
 
 interface VerifyInfo {
-    email: string;
-    // onResend: () => void;
+  email: string;
+  isResending?: boolean;
+  canResend?: boolean;
+  onResend: () => void;
 }
 
-export const VerifyNoti = ({ email }: VerifyInfo) => {
+export const VerifyNoti = ({
+  email,
+  isResending = false,
+  canResend = true,
+  onResend,
+}: VerifyInfo) => {
   return (
     <main className="flex flex-col items-center justify-center min-h-115 px-6 py-12">
         <div className="flex flex-col items-center text-center max-w-160">
@@ -27,9 +35,17 @@ export const VerifyNoti = ({ email }: VerifyInfo) => {
           <p className="text-base text-primary-cyan mt-1">
             Didn't receive an email?{" "}
             <button
-              className="bg-transparent border-none p-0 text-foreground font-medium text-sm font-body underline underline-offset-2 cursor-pointer hover:opacity-70 transition-opacity"
+              type="button"
+              disabled={!canResend || isResending}
+              onClick={onResend}
+              className="inline-flex items-center gap-1 bg-transparent border-none p-0 text-foreground font-medium text-sm font-body underline underline-offset-2 cursor-pointer hover:opacity-70 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Resend Verification Link
+              {isResending && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              )}
+              {isResending
+                ? "Sending..."
+                : "Resend Verification Link"}
             </button>
           </p>
 

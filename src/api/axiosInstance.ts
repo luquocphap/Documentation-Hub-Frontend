@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { BACKEND_URL } from '../lib/constant';
+import { clearAuthenticatedSession } from '../lib/authSession';
 
 
 // Khởi tạo axios instance
@@ -54,13 +55,19 @@ axiosInstance.interceptors.response.use(
         return response.data;
     },
     async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & {
+            _retry?: boolean;
+            suppressAuthRedirect?: boolean;
+        };
         const errorData = error.response?.data as ErrorResponse | undefined;
         const isJwtExpired = error.response?.status === 403 && errorData?.message === 'jwt expired';
+        const suppressAuthRedirect = originalRequest?.suppressAuthRedirect === true;
 
         if (error.response?.status === 401) {
-            localStorage.removeItem('isLoggedIn');
-            window.location.href = '/401';
+            if (!suppressAuthRedirect) {
+                clearAuthenticatedSession();
+                window.location.href = '/401';
+            }
             return Promise.reject(error);
         }
 
@@ -71,7 +78,9 @@ axiosInstance.interceptors.response.use(
 
         // Chỉ refresh khi backend báo JWT hết hạn; 403 khác là lỗi quyền thật.
         if (error.response?.status === 403 && !isJwtExpired) {
-            window.location.href = '/403';
+            if (!suppressAuthRedirect) {
+                window.location.href = '/403';
+            }
             return Promise.reject(error);
         }
 
@@ -107,8 +116,10 @@ axiosInstance.interceptors.response.use(
             } catch (refreshError) {
                 console.log("Lỗi refresh token")
                 processQueue(refreshError, null);
-                // Refresh token cũng hết hạn hoặc lỗi -> Force logout (Vì chỉ có role admin)
-                window.location.href = '/403';
+                clearAuthenticatedSession();
+                if (!suppressAuthRedirect) {
+                    window.location.href = '/login';
+                }
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;
@@ -116,7 +127,9 @@ axiosInstance.interceptors.response.use(
         }
 
         if (error.response?.status === 403) {
-            window.location.href = '/403';
+            if (!suppressAuthRedirect) {
+                window.location.href = '/403';
+            }
             return Promise.reject(error);
         }
 

@@ -3,9 +3,13 @@ import { authApi, type RegisterInput } from "@/api/api";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { getBadRequestMessage } from "@/lib/apiValidation";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { CustomInput } from "@/components/CustomInput";
+import {
+  buildWorkspaceRedirectQuery,
+  normalizeWorkspaceRedirect,
+} from "@/lib/workspaceRedirect";
 
 type RegisterFormData = RegisterInput & {
   confirmPassword: string;
@@ -19,6 +23,11 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = normalizeWorkspaceRedirect(
+    searchParams.get("redirectTo")
+  );
+  const redirectQuery = buildWorkspaceRedirectQuery(redirectTo);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; fullname?: string, confirmPassword?: string }>({});
   const [generalError, setGeneralError] = useState<string>("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -97,12 +106,13 @@ export default function RegisterPage() {
       fullName: formData.fullName,
       email: formData.email,
       password: formData.password,
+      redirectTo,
     };
 
     try {
       await authApi.register(registerData);
       
-      navigate("/verify-email", {
+      navigate(`/verify-email${redirectQuery}`, {
         state: { email: formData.email },
       });
     } catch (error: any) {
@@ -216,9 +226,12 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-primary-cyan mt-2">
           Already have an account?{" "}
-          <a href="/login" className="font-semibold text-foreground hover:underline">
+          <Link
+            to={`/login${redirectQuery}`}
+            className="font-semibold text-foreground hover:underline"
+          >
             Sign In
-          </a>
+          </Link>
         </p>
       </div>
     </AuthLayout>

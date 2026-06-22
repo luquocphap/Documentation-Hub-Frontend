@@ -1,4 +1,5 @@
 import './App.css'
+import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import RegisterPage from './pages/RegisterPage'
 import LoginPage from './pages/LoginPage'
@@ -15,12 +16,20 @@ import UnauthorizedPage from './pages/UnauthorizedPage'
 import NotFoundPage from './pages/NotFoundPage'
 import DocumentPage from './pages/DocumentPage'
 import { ActivityLogPage } from './pages/ActivityLogsPage'
+import { useAuthStore } from './stores/useAuthStore'
+import { WorkspaceProtectedRoute } from './components/WorkspaceProtectedRoute'
 
 function App() {
+  const initializeAuth = useAuthStore((state) => state.initializeAuth)
+
+  useEffect(() => {
+    void initializeAuth()
+  }, [initializeAuth])
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path='/' element={<Navigate to='/register' replace />} />
+        <Route path='/' element={<Navigate to='/dashboard' replace />} />
         <Route path='/register' element={<RegisterPage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/verify-email' element={<VerifyEmailPage />} />
@@ -31,11 +40,14 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path='/dashboard' element={<DashboardPage />} />
+          <Route path="/document/:documentId" element={<DocumentPage />} />
+        </Route>
+
+        <Route element={<WorkspaceProtectedRoute />}>
           <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
           <Route path="/workspaces/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
           <Route path="/workspaces/:workspaceId/members" element={<WorkspaceMembersPage />} />
           <Route path='/workspaces/:workspaceId/activity-logs' element={<ActivityLogPage />} />
-          <Route path="/document/:documentId" element={<DocumentPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

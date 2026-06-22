@@ -1,21 +1,76 @@
 import { create } from 'zustand';
 import { authApi } from '@/api/api';
-
-const AUTH_FLAG_KEY = 'isLoggedIn';
+import {
+  clearAuthenticatedSession,
+  hasAuthenticatedSession,
+  markAuthenticatedSession,
+} from '@/lib/authSession';
 
 interface AuthState {
   isAuthenticated: boolean;
+  isAuthChecking: boolean;
+  initializeAuth: () => Promise<void>;
   login: () => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>(() => ({
+let authInitializationPromise: Promise<void> | null = null;
+let authStateRevision = 0;
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   // Khởi tạo từ localStorage → không bị reset khi refresh trang
-  isAuthenticated: localStorage.getItem(AUTH_FLAG_KEY) === 'true',
+  isAuthenticated: hasAuthenticatedSession(),
+  isAuthChecking: true,
+
+  initializeAuth: () => {
+    if (!get().isAuthChecking) {
+      return Promise.resolve();
+    }
+
+    if (authInitializationPromise) {
+      return authInitializationPromise;
+    }
+
+    const initializationRevision = authStateRevision;
+
+    authInitializationPromise = (async () => {
+      try {
+        await authApi.getInfo({
+          suppressAuthRedirect: true,
+        });
+
+        if (initializationRevision !== authStateRevision) {
+          return;
+        }
+
+        markAuthenticatedSession();
+        set({ isAuthenticated: true });
+      } catch {
+        if (initializationRevision !== authStateRevision) {
+          return;
+        }
+
+        clearAuthenticatedSession();
+        set({ isAuthenticated: false });
+      } finally {
+        if (initializationRevision === authStateRevision) {
+          set({ isAuthChecking: false });
+        }
+
+        authInitializationPromise = null;
+      }
+    })();
+
+    return authInitializationPromise;
+  },
 
   login: () => {
-    localStorage.setItem(AUTH_FLAG_KEY, 'true');
-    useAuthStore.setState({ isAuthenticated: true });
+    authStateRevision += 1;
+    markAuthenticatedSession();
+    set({
+      isAuthenticated: true,
+      isAuthChecking: false,
+    });
   },
 
   logout: async () => {
@@ -24,8 +79,12 @@ export const useAuthStore = create<AuthState>(() => ({
     } catch {
       // ignore — vẫn logout client dù server lỗi
     } finally {
-      localStorage.removeItem(AUTH_FLAG_KEY);
-      useAuthStore.setState({ isAuthenticated: false });
+      authStateRevision += 1;
+      clearAuthenticatedSession();
+      set({
+        isAuthenticated: false,
+        isAuthChecking: false,
+      });
     }
   },
 }));
