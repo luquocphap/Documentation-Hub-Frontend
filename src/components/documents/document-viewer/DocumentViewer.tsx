@@ -854,7 +854,7 @@ export function DocumentViewer({
         docViewer.setViewerElement(viewerRef.current);
         docViewer.enableAnnotations();
 
-        try { window.Core.ContentEdit?.preloadWorker(docViewer); } catch { /* ignore */ }
+        try { window.Core.ContentEdit?.preloadWorker?.(docViewer); } catch { /* ignore */ }
 
         const annotationManager = docViewer.getAnnotationManager();
 

@@ -1,0 +1,48 @@
+services:
+  frontend:
+    image: luquocphap/doc-hub-frontend:latest
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env.fe
+    depends_on:
+      - gateway
+    networks:
+      - dochub-network
+
+  gateway:
+    image: luquocphap/doc-hub-backend:latest
+    ports:
+      - "3070:3069"
+    env_file:
+      - .env.be
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - dochub-network
+
+  mongo:
+    image: mongo:8
+    env_file:
+      - .env.be
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27018:27017"
+    networks:
+      - dochub-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6380:6379"
+    networks:
+      - dochub-network
+
+volumes:
+  mongo_data:
+
+networks:
+  dochub-network:
+    driver: bridge

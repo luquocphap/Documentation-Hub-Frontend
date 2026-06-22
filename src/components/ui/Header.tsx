@@ -108,7 +108,10 @@ export function Header({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild >
-                <button className="w-8 h-8 rounded-md overflow-hidden focus:outline-none shrink-0">
+                <button
+                  className="w-8 h-8 rounded-md overflow-hidden focus:outline-none shrink-0"
+                  onClick={onUserClick}
+                >
                   <Avatar className="rounded-md">
                     <AvatarImage src={user?.avatarUrl} alt={user?.name} />
                     <AvatarFallback className="rounded-md">
