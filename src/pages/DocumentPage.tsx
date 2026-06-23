@@ -7,11 +7,24 @@ import {
   Loader2, ArrowLeft, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { ShareDocumentModal } from "@/components/documents/ShareDocumentModal";
 import { DocumentViewer } from "@/components/documents/document-viewer/DocumentViewer";
 import type { DocumentViewerHandle } from "@/components/documents/document-viewer/types";
 import { ChatTextIcon, NotePencilIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+
+const DOCUMENT_ROLE_DESCRIPTIONS: Record<Exclude<DocumentRole, null>, string> = {
+  Owner: "Full control (edit, share, comment, rename, delete)",
+  Editor: "Edit content and add comments",
+  Commenter: "View and comment only",
+  Viewer: "View only",
+};
 
 export default function DocumentPage() {
   const { documentId } = useParams<{ documentId: string }>();
@@ -91,14 +104,32 @@ export default function DocumentPage() {
           </Button>
 
           <div className="h-8 flex items-center gap-3">
-            <div className="flex items-center gap-1 justify-center px-2 py-0.5 bg-secondary rounded-full">
-              <span className="text-xs font-medium text-secondary-foreground tracking-wider">
-                {userRole || "Loading..."}
-              </span>
-              <Info size={12} />
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 justify-center px-2 py-0.5 bg-secondary rounded-full cursor-help">
+                    <span className="text-xs font-medium text-secondary-foreground tracking-wider">
+                      {userRole || "Loading..."}
+                    </span>
+                    <Info size={12} />
+                  </div>
+                </TooltipTrigger>
+                {userRole && (
+                  <TooltipContent
+                    side="bottom"
+                    align="center"
+                    sideOffset={10}
+                    className="max-w-sm rounded-md py-1.5 px-3 bg-[#171717] text-xs font-normal leading-normal text-white shadow-lg [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+                  >
+                    {DOCUMENT_ROLE_DESCRIPTIONS[userRole]}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
 
-            <div className="w-px h-4 bg-[#E5E5E5] block" />
+            {userRole !== "Viewer" && (
+              <div className="w-px h-4 bg-[#E5E5E5] block" />
+            )}
 
             <div className="flex items-center gap-1.5">
               {(userRole === "Owner" || userRole === "Editor") && (
