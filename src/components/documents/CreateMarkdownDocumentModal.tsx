@@ -3,12 +3,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Maximize2, X, Bold, Italic, Underline, Strikethrough, List, ListOrdered, FileText } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { documentApi } from "@/api/api";
 import { toast } from "sonner";
 
-// --- ĐỊNH NGHĨA CÁC NÚT TRÊN TOOLBAR ---
-const TOOLBAR_ACTIONS = [
+interface MarkdownToolbarAction {
+  icon: LucideIcon;
+  tooltip: string;
+  prefix: string;
+  suffix: string;
+  shortcutKey: string | null;
+}
+
+const TOOLBAR_ACTIONS: MarkdownToolbarAction[] = [
   { icon: Bold, tooltip: 'Bold (Cmd/Ctrl + B)', prefix: '**', suffix: '**', shortcutKey: 'b' },
   { icon: Italic, tooltip: 'Italic (Cmd/Ctrl + I)', prefix: '_', suffix: '_', shortcutKey: 'i' },
   { icon: Underline, tooltip: 'Underline (Cmd/Ctrl + U)', prefix: '<u>', suffix: '</u>', shortcutKey: 'u' },
@@ -16,6 +30,44 @@ const TOOLBAR_ACTIONS = [
   { icon: List, tooltip: 'Bulleted list', prefix: '- ', suffix: '', shortcutKey: null },
   { icon: ListOrdered, tooltip: 'Numbered list', prefix: '1. ', suffix: '', shortcutKey: null },
 ];
+
+interface MarkdownToolbarActionButtonProps {
+  action: MarkdownToolbarAction;
+  onApply: (prefix: string, suffix: string) => void;
+}
+
+function MarkdownToolbarActionButton({
+  action,
+  onApply,
+}: MarkdownToolbarActionButtonProps) {
+  const Icon = action.icon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={action.tooltip}
+          className="text-muted-foreground hover:bg-gray-200 hover:text-foreground"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onApply(action.prefix, action.suffix)}
+        >
+          <Icon size={16} />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="bottom"
+        align="center"
+        sideOffset={6}
+        className="whitespace-nowrap rounded-md bg-[#171717] px-3 py-1.5 text-xs font-normal text-white shadow-md [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+      >
+        {action.tooltip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 interface CreateMarkdownDocumentModalProps {
   isOpen: boolean;
@@ -173,27 +225,21 @@ export function CreateMarkdownDocumentModal({ isOpen, onClose, workspaceId, onSu
               `}>
                 
                 {/* TOOLBAR */}
-                <div className="h-10 shrink-0 border-b border-[#E5E5E5] bg-gray-50/50 flex items-center px-2 gap-1 relative z-10">
-                  {TOOLBAR_ACTIONS.map((action, idx) => {
-                    const Icon = action.icon;
-                    return (
-                      <div key={idx} className="relative group flex items-center justify-center">
-                        <button 
-                          type="button" 
-                          onClick={() => applyMarkdown(action.prefix, action.suffix)}
-                          className="p-1.5 rounded hover:bg-gray-200 text-muted-foreground transition-colors outline-none"
-                        >
-                          <Icon size={16} />
-                        </button>
-
-                        {/* TOOLTIP: Thiết kế chuẩn thông số (h-28, px-12, py-6, bg-171717) */}
-                        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity flex flex-row justify-center items-center px-3 py-1.5 gap-2 bg-[#171717] rounded-lg h-7 whitespace-nowrap text-white text-[12px] shadow-md z-1000">
-                          {action.tooltip}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <TooltipProvider>
+                  <div
+                    role="toolbar"
+                    aria-label="Markdown formatting"
+                    className="h-10 shrink-0 border-b border-[#E5E5E5] bg-gray-50/50 flex items-center px-2 gap-1 relative z-10"
+                  >
+                    {TOOLBAR_ACTIONS.map((action) => (
+                      <MarkdownToolbarActionButton
+                        key={action.tooltip}
+                        action={action}
+                        onApply={applyMarkdown}
+                      />
+                    ))}
+                  </div>
+                </TooltipProvider>
 
                 {/* TEXTAREA NHẬP MD */}
                 <Textarea
