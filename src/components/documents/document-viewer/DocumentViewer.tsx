@@ -8,6 +8,12 @@ import {
 import { toast } from "sonner";
 import { Loader2, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { APRYSE_LICENSE_KEY, CLOUDINARY_CLOUD_NAME } from "@/lib/constant";
 import {
   createDocumentSocket,
@@ -37,6 +43,7 @@ import type {
 
 const COMMENT_FLOAT_COORDINATE_MODE: CommentCoordinateMode = "content";
 const COMMENT_FLOAT_FINE_TUNE = { x: -70, y: -170 };
+const MAX_DOCUMENT_TITLE_LENGTH = 255;
 const COMMENT_FLOAT_PLACEMENT_OFFSET: Record<FloatingPlacement, { x: number; y: number }> = {
   button: { x: 8, y: -36 },
   input: { x: 170, y: -50 },
@@ -76,6 +83,7 @@ export function DocumentViewer({
   const [isContentEditMode, setIsContentEditMode] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
+  const isTitleTooLong = title.length > MAX_DOCUMENT_TITLE_LENGTH;
 
   // API-backed comments
   const [comments, setComments] = useState<IDocumentCommentResponse[]>([]);
@@ -1008,6 +1016,7 @@ export function DocumentViewer({
   // Rename
   const handleRename = async () => {
     if (!documentId || !title.trim()) { setIsEditing(false); return; }
+    if (isTitleTooLong) return;
     setIsSaving(true);
     try {
       const res = await documentApi.update(documentId, { title: title.trim() });
@@ -1155,49 +1164,85 @@ export function DocumentViewer({
 
       {/* TITLE BAR */}
       <div className="h-16 py-2 pl-3 pr-4 shrink-0 flex items-center border-b border-[#E5E5E5]">
-        {isEditing ? (
-          <>
-            <span
-              ref={measureRef}
-              className="text-lg font-medium invisible absolute whitespace-pre py-1 px-2.5"
-              aria-hidden
-            >
-              {title}
-            </span>
-            <input
-              ref={inputRef}
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => setIsEditing(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRename();
-                if (e.key === "Escape") { setTitle(initialTitle); setIsEditing(false); }
+        <TooltipProvider>
+          {isEditing ? (
+            <>
+              <span
+                ref={measureRef}
+                className="text-lg font-medium invisible absolute whitespace-pre py-1 px-2.5"
+                aria-hidden
+              >
+                {title}
+              </span>
+              <Tooltip open={isTitleTooLong}>
+                <TooltipTrigger asChild>
+                  <input
+                    ref={inputRef}
+                    autoFocus
+                    value={title}
+                    aria-invalid={isTitleTooLong}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => {
+                      if (!isTitleTooLong) setIsEditing(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRename();
+                      if (e.key === "Escape") { setTitle(initialTitle); setIsEditing(false); }
+                    }}
+                    style={{ width: inputWidth || "auto" }}
+                    className={`text-lg py-1 px-2.5 font-medium text-foreground border rounded-lg outline-none transition-shadow ${
+                      isTitleTooLong
+                        ? "border-destructive ring-2 ring-destructive/30 shadow-[0_0_0_3px_rgba(239,68,68,0.15)]"
+                        : "focus:ring-2 focus:ring-ring/30"
+                    }`}
+                  />
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  align="center"
+                  sideOffset={10}
+                  className="max-w-sm whitespace-nowrap rounded-md py-1.5 px-3 bg-[#171717] text-xs font-normal leading-normal text-white shadow-lg [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+                >
+                  Document name must be 255 characters or fewer
+                </TooltipContent>
+              </Tooltip>
+            </>
+          ) : (
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                requestAnimationFrame(() => {
+                  if (inputRef.current) {
+                    const len = inputRef.current.value.length;
+                    inputRef.current.setSelectionRange(len, len);
+                  }
+                });
               }}
-              style={{ width: inputWidth || "auto" }}
-              className="text-lg py-1 px-2.5 font-medium text-foreground border rounded-lg"
-            />
-          </>
-        ) : (
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              requestAnimationFrame(() => {
-                if (inputRef.current) {
-                  const len = inputRef.current.value.length;
-                  inputRef.current.setSelectionRange(len, len);
-                }
-              });
-            }}
-            className="flex items-center gap-1.5"
-          >
-            <span className="text-lg font-medium text-foreground truncate flex-1">{title}</span>
-            {isSaving
-              ? <Loader2 size={16} className="text-muted-foreground shrink-0 animate-spin" />
-              : <PencilLine size={16} className="text-muted-foreground shrink-0" />
-            }
-          </button>
-        )}
+              className="flex items-center gap-1.5"
+            >
+              <span className="text-lg font-medium text-foreground truncate flex-1">{title}</span>
+              {isSaving ? (
+                <Loader2 size={16} className="text-muted-foreground shrink-0 animate-spin" />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex shrink-0">
+                      <PencilLine size={16} className="text-muted-foreground" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    align="center"
+                    sideOffset={10}
+                    className="rounded-md py-1.5 px-3 bg-[#171717] text-xs font-normal leading-normal text-white shadow-lg [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+                  >
+                    Rename
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </button>
+          )}
+        </TooltipProvider>
 
         {isContentEditMode && (
           <div className="flex gap-2 ml-auto">
