@@ -1,73 +1,80 @@
-# React + TypeScript + Vite
+# Documentation Hub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Chạy ứng dụng trên local
 
-Currently, two official plugins are available:
+### Yêu cầu
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Tài khoản và CLI [ngrok](https://ngrok.com/)
 
-## React Compiler
+### 1. Clone source frontend
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/luquocphap/Documentation-Hub-Frontend.git
+cd Documentation-Hub-Frontend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Thiết lập ngrok
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Nếu chưa có tài khoản hoặc chưa cài ngrok:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. [Đăng ký hoặc đăng nhập ngrok](https://dashboard.ngrok.com/).
+2. [Tải và cài đặt ngrok CLI](https://ngrok.com/download).
+3. Kiểm tra ngrok đã được cài đặt:
+
+   ```bash
+   ngrok help
+   ```
+
+4. Lấy authtoken tại [ngrok Dashboard](https://dashboard.ngrok.com/get-started/your-authtoken), sau đó cấu hình:
+
+   ```bash
+   ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
+   ```
+
+Các bước đăng ký, cài đặt và cấu hình authtoken chỉ cần thực hiện một lần.
+
+### 3. Public cổng backend bằng ngrok
+
+Mở một terminal và chạy:
+
+```bash
+ngrok http 3070
+```
+
+Sao chép HTTPS URL được ngrok hiển thị và giữ terminal này tiếp tục chạy trong suốt thời gian sử dụng ứng dụng.
+
+### 4. Chuẩn bị biến môi trường
+
+Tại thư mục gốc của source, chuẩn bị đúng hai file cấu hình:
+
+- `.env.fe` cho frontend.
+- `.env.be` cho backend.
+
+Không đổi tên hai file này. Nội dung biến môi trường được cấu hình theo thông tin của dự án.
+
+Trong file `.env.be`, điền HTTPS URL vừa nhận từ ngrok vào trường `BACKEND_URL`.
+
+URL miễn phí có thể thay đổi sau mỗi lần khởi động lại ngrok, vì vậy hãy cập nhật lại `BACKEND_URL` khi cần.
+
+### 5. Khởi động ứng dụng
+
+Mở terminal khác tại thư mục source và chạy:
+
+```bash
+docker compose up -d
+```
+
+Sau khi các container khởi động, truy cập ứng dụng tại [http://localhost:5173](http://localhost:5173).
+
+Kiểm tra trạng thái các service:
+
+```bash
+docker compose ps
+```
+
+Tắt ứng dụng:
+
+```bash
+docker compose down -v
 ```
