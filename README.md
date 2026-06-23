@@ -1,79 +1,79 @@
 # Documentation Hub
 
-## Chạy ứng dụng trên local
+## Run the Application Locally
 
-### Yêu cầu
+### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- Tài khoản và CLI [ngrok](https://ngrok.com/)
+- An [ngrok](https://ngrok.com/) account and the ngrok CLI
 
-### 1. Clone source frontend
+### 1. Clone the Frontend Repository
 
 ```bash
 git clone https://github.com/luquocphap/Documentation-Hub-Frontend.git
 cd Documentation-Hub-Frontend
 ```
 
-### 2. Thiết lập ngrok
+### 2. Set Up ngrok
 
-Nếu chưa có tài khoản hoặc chưa cài ngrok:
+If you do not have an ngrok account or have not installed ngrok:
 
-1. [Đăng ký hoặc đăng nhập ngrok](https://dashboard.ngrok.com/).
-2. [Tải và cài đặt ngrok CLI](https://ngrok.com/download).
-3. Kiểm tra ngrok đã được cài đặt:
+1. [Sign up or log in to ngrok](https://dashboard.ngrok.com/).
+2. [Download and install the ngrok CLI](https://ngrok.com/download).
+3. Verify the installation:
 
    ```bash
    ngrok help
    ```
 
-4. Lấy authtoken tại [ngrok Dashboard](https://dashboard.ngrok.com/get-started/your-authtoken), sau đó cấu hình:
+4. Get your authtoken from the [ngrok Dashboard](https://dashboard.ngrok.com/get-started/your-authtoken), then configure it:
 
    ```bash
    ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
    ```
 
-Các bước đăng ký, cài đặt và cấu hình authtoken chỉ cần thực hiện một lần.
+You only need to complete the registration, installation, and authtoken configuration once.
 
-### 3. Public cổng backend bằng ngrok
+### 3. Expose the Backend Port with ngrok
 
-Mở một terminal và chạy:
+Open a terminal and run:
 
 ```bash
 ngrok http 3070
 ```
 
-Sao chép HTTPS URL được ngrok hiển thị và giữ terminal này tiếp tục chạy trong suốt thời gian sử dụng ứng dụng.
+Copy the HTTPS URL displayed by ngrok and keep this terminal running while using the application.
 
-### 4. Chuẩn bị biến môi trường
+### 4. Configure Environment Variables
 
-Tại thư mục gốc của source, chuẩn bị đúng hai file cấu hình:
+Prepare the following two files in the repository root:
 
-- `.env.fe` cho frontend.
-- `.env.be` cho backend.
+- `.env.fe` for the frontend.
+- `.env.be` for the backend.
 
-Không đổi tên hai file này. Nội dung biến môi trường được cấu hình theo thông tin của dự án.
+Do not rename these files. Configure their environment variables using the project's configuration details.
 
-Trong file `.env.be`, điền HTTPS URL vừa nhận từ ngrok vào trường `BACKEND_URL`.
+In `.env.be`, set `BACKEND_URL` to the HTTPS URL provided by ngrok.
 
-URL miễn phí có thể thay đổi sau mỗi lần khởi động lại ngrok, vì vậy hãy cập nhật lại `BACKEND_URL` khi cần.
+The free ngrok URL may change whenever ngrok restarts. Update `BACKEND_URL` when necessary.
 
-### 5. Khởi động ứng dụng
+### 5. Start the Application
 
-Mở terminal khác tại thư mục source và chạy:
+Open another terminal in the repository root and run:
 
 ```bash
 docker compose up -d
 ```
 
-Sau khi các container khởi động, truy cập ứng dụng tại [http://localhost:5173](http://localhost:5173).
+After the containers start, open [http://localhost:5173](http://localhost:5173) in your browser.
 
-Kiểm tra trạng thái các service:
+Check the service status:
 
 ```bash
 docker compose ps
 ```
 
-Tắt ứng dụng:
+Stop the application and remove its volumes:
 
 ```bash
 docker compose down -v
