@@ -9,6 +9,7 @@ export interface DocumentViewerProps {
   documentId: string;
   publicId: string;
   initialTitle: string;
+  canComment: boolean;
   onViewerInit?: (handle: DocumentViewerHandle) => void;
   onTitleUpdate?: (newTitle: string) => void;
   onSaveSuccess?: () => void;

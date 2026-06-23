@@ -598,7 +598,7 @@ export function ThreadCommentModal({
               />
 
               <div
-                className="flex items-center flex-1 min-w-0 rounded-lg border border-[#E5E5E5] bg-white pr-1 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                className="flex items-center flex-1 min-w-0 rounded-lg border border-ring bg-white pr-1 focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               >
                 <input
                   ref={inputRef}

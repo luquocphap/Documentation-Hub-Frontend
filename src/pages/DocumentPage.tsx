@@ -183,6 +183,11 @@ export default function DocumentPage() {
             documentId={documentId}
             publicId={publicId}
             initialTitle={title}
+            canComment={
+              userRole === "Owner" ||
+              userRole === "Editor" ||
+              userRole === "Commenter"
+            }
             onTitleUpdate={setTitle}
             onViewerInit={(handle) => {
               viewerHandleRef.current = handle;

@@ -46,8 +46,8 @@ const COMMENT_FLOAT_FINE_TUNE = { x: -70, y: -170 };
 const MAX_DOCUMENT_TITLE_LENGTH = 255;
 const COMMENT_FLOAT_PLACEMENT_OFFSET: Record<FloatingPlacement, { x: number; y: number }> = {
   button: { x: 8, y: -36 },
-  input: { x: 170, y: -50 },
-  anchor: { x: 0, y: -60 },
+  input: { x: 190, y: -48 },
+  anchor: { x: 5, y: -65 },
 };
 
 type AnchorUpdateMode = "replace" | "merge";
@@ -56,6 +56,7 @@ export function DocumentViewer({
   documentId,
   publicId,
   initialTitle,
+  canComment,
   onViewerInit,
   onTitleUpdate,
   onSaveSuccess,
@@ -67,6 +68,7 @@ export function DocumentViewer({
   const commentSelectionSnapshotRef = useRef<SelectedTextInfo | null>(null);
   const isCommentInputOpenRef = useRef(false);
   const isContentEditModeRef = useRef(false);
+  const canCommentRef = useRef(canComment);
   const onViewerInitRef = useRef(onViewerInit);
   const getFloatingPositionRef = useRef<(
     selection: SelectedTextInfo,
@@ -146,6 +148,10 @@ export function DocumentViewer({
   useEffect(() => {
     isContentEditModeRef.current = isContentEditMode;
   }, [isContentEditMode]);
+
+  useEffect(() => {
+    canCommentRef.current = canComment;
+  }, [canComment]);
 
   useEffect(() => {
     onViewerInitRef.current = onViewerInit;
@@ -519,6 +525,8 @@ export function DocumentViewer({
     preferFallback = false,
     selectionOverride?: SelectedTextInfo | null
   ) => {
+    if (!canCommentRef.current) return;
+
     if (isContentEditModeRef.current) {
       toast.error("Finish editing before adding a comment.");
       return;
@@ -554,7 +562,7 @@ export function DocumentViewer({
 
   // Load comments from API 
   const loadComments = useCallback(async () => {
-    if (!documentId) return;
+    if (!documentId || !canCommentRef.current) return;
     try {
       const res = await commentApi.getByDocumentId(documentId);
       const loadedComments = res.data;
@@ -580,7 +588,7 @@ export function DocumentViewer({
   }, [documentId, hydrateLoadedComments]);
 
   useEffect(() => {
-    if (!documentId) return;
+    if (!documentId || !canComment) return;
 
     const socket = createDocumentSocket();
 
@@ -722,6 +730,7 @@ export function DocumentViewer({
     };
   }, [
     documentId,
+    canComment,
     appendCommentIfMissing,
     handleCommentDeleted,
     handleCommentUpdated,
@@ -731,6 +740,8 @@ export function DocumentViewer({
 
   // Submit new comment
   const handleSubmitComment = async () => {
+    if (!canCommentRef.current) return;
+
     const draft = commentDraft.trim();
     if (!draft) { toast.error("Enter a comment first."); return; }
 
@@ -904,15 +915,25 @@ export function DocumentViewer({
           docViewer.zoomTo(616 / pageWidth);
           setDefaultViewerTool(docViewer);
           setIsLoading(false);
-          // Load existing comments
-          void loadComments().finally(() => {
-            scheduleAnchorRecalculation();
-          });
+          if (canCommentRef.current) {
+            // Load existing comments
+            void loadComments().finally(() => {
+              scheduleAnchorRecalculation();
+            });
+          }
         });
 
         docViewer.addEventListener("pageNumberUpdated", (page: number) => setCurrentPage(page));
 
         docViewer.addEventListener("textSelected", (quads: unknown[], text: string, pageNumber: number) => {
+          if (!canCommentRef.current) {
+            latestSelectionRef.current = null;
+            commentSelectionSnapshotRef.current = null;
+            setAddBtnPos(null);
+            setInputBoxPos(null);
+            return;
+          }
+
           const selectedText = text.trim();
           if (!selectedText || !Array.isArray(quads) || quads.length === 0) {
             if (!isCommentInputOpenRef.current) {
@@ -966,6 +987,7 @@ export function DocumentViewer({
             },
             isContentEditActive: () => isContentEditModeRef.current,
             openCommentPanel: () => {
+              if (!canCommentRef.current) return;
               closeFloatingUI();
               void loadComments();
               setIsCommentPanelOpen(true);
@@ -1297,19 +1319,19 @@ export function DocumentViewer({
             <div ref={viewerRef} style={{ margin: "auto", width: "580px" }} />
 
             {/* Floating add-comment button (shown after text selection) */}
-            {addBtnPos && !inputBoxPos && (
+            {canComment && addBtnPos && !inputBoxPos && (
               <AddCommentButton
                 position={addBtnPos}
                 onClick={() => openCommentInput(
                   addBtnPos,
-                  true,
+                  false,
                   commentSelectionSnapshotRef.current
                 )}
               />
             )}
 
             {/* Comment input box */}
-            {inputBoxPos && (
+            {canComment && inputBoxPos && (
               <CommentInputBox
                 position={inputBoxPos}
                 value={commentDraft}
@@ -1321,7 +1343,7 @@ export function DocumentViewer({
             )}
 
             {/* Comment anchors on annotated text */}
-            {comments.map((comment) => {
+            {canComment && comments.map((comment) => {
               if (comment._id === activeCommentId) return null;
               const pos = anchorPositions[comment._id];
               if (!pos) return null;
@@ -1337,7 +1359,7 @@ export function DocumentViewer({
           </div>
         </div>
 
-        {activeComment && (
+        {canComment && activeComment && (
           <ThreadCommentModal
             key={activeComment._id}
             comment={activeComment}
@@ -1348,7 +1370,7 @@ export function DocumentViewer({
           />
         )}
 
-        {isCommentPanelOpen && (
+        {canComment && isCommentPanelOpen && (
           <CommentPanel
             comments={comments}
             onClose={() => setIsCommentPanelOpen(false)}

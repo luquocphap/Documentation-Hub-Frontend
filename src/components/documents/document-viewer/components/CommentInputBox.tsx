@@ -49,7 +49,7 @@ export function CommentInputBox({
       onTouchStart={(event) => event.stopPropagation()}
     >
       <div
-        className="bg-white border border-[#E5E5E5] rounded-lg flex items-center"
+        className="bg-white border border-ring rounded-lg flex items-center"
         style={{
           padding: "4px 10px",
           gap: 6,
