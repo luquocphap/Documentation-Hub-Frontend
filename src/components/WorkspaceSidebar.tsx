@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { 
   ChevronDown, Check, LayoutGrid, Plus, 
-  FileText, Users, Activity, Settings 
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import avatarIcon from "@/assets/images/avatar.png";
 import type { IWorkspaceDetailResponse, WorkspaceItem } from "@/api/api";
+import { FilesIcon } from "@phosphor-icons/react/dist/ssr";
+import { ClockIcon, GearIcon } from "@phosphor-icons/react";
 
 export type SidebarTab = "documents" | "members" | "activity" | "settings";
 
@@ -125,7 +127,7 @@ export function WorkspaceSidebar({
       {/* Navigation Links */}
       <nav className="flex flex-col gap-1 p-2">
         <Button {...getButtonProps("documents")} onClick={() => navigate(`/workspaces/${workspaceId}`)}>
-          <FileText className="mr-2 w-4 h-4" /> Documents
+          <FilesIcon className="mr-2 w-4 h-4" /> Documents
         </Button>
         
         <Button {...getButtonProps("members")} onClick={() => navigate(`/workspaces/${workspaceId}/members`)}>
@@ -135,13 +137,13 @@ export function WorkspaceSidebar({
         {/* Các mục chỉ hiện tùy theo role */}
         {workspace?.userRole === "Admin" && (
           <Button {...getButtonProps("activity")} onClick={() => navigate(`/workspaces/${workspaceId}/activity-logs`)}>
-            <Activity className="mr-2 w-4 h-4" /> Activity log
+            <ClockIcon className="mr-2 w-4 h-4" /> Activity log
           </Button>
         )}
         
         {workspace?.userRole === "Admin" && (
           <Button {...getButtonProps("settings")} onClick={() => navigate(`/workspaces/${workspaceId}/settings`)}>
-            <Settings className="mr-2 w-4 h-4" /> Settings
+            <GearIcon className="mr-2 w-4 h-4" /> Settings
           </Button>
         )}
       </nav>

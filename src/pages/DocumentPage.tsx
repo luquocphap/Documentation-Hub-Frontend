@@ -1,17 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/ui/Header";
-import { documentApi, type DocumentListItem, type DocumentRole } from "@/api/api";
+import { documentApi, type DocumentRole } from "@/api/api";
 import { toast } from "sonner";
 import {
-  Loader2, ArrowLeft, Edit3, MessageSquare, Share2, Trash2, Info
+  Loader2, ArrowLeft, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { ShareDocumentModal } from "@/components/documents/ShareDocumentModal";
-import { DeleteDocumentModal } from "@/components/documents/DeleteDocumentModal";
 import { DocumentViewer } from "@/components/documents/document-viewer/DocumentViewer";
 import type { DocumentViewerHandle } from "@/components/documents/document-viewer/types";
+import { ChatTextIcon, NotePencilIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+
+const DOCUMENT_ROLE_DESCRIPTIONS: Record<Exclude<DocumentRole, null>, string> = {
+  Owner: "Full control (edit, share, comment, rename, delete)",
+  Editor: "Edit content and add comments",
+  Commenter: "View and comment only",
+  Viewer: "View only",
+};
 
 export default function DocumentPage() {
   const { documentId } = useParams<{ documentId: string }>();
@@ -27,7 +40,6 @@ export default function DocumentPage() {
   const [userRole, setUserRole] = useState<DocumentRole>(null);
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [docToDelete, setDocToDelete] = useState<DocumentListItem | null>(null);
 
   useEffect(() => {
     if (!documentId) return;
@@ -92,14 +104,32 @@ export default function DocumentPage() {
           </Button>
 
           <div className="h-8 flex items-center gap-3">
-            <div className="flex items-center gap-1 justify-center px-2 py-0.5 bg-secondary rounded-full">
-              <span className="text-xs font-medium text-secondary-foreground tracking-wider">
-                {userRole || "Loading..."}
-              </span>
-              <Info size={12} />
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 justify-center px-2 py-0.5 bg-secondary rounded-full cursor-help">
+                    <span className="text-xs font-medium text-secondary-foreground tracking-wider">
+                      {userRole || "Loading..."}
+                    </span>
+                    <Info size={12} />
+                  </div>
+                </TooltipTrigger>
+                {userRole && (
+                  <TooltipContent
+                    side="bottom"
+                    align="center"
+                    sideOffset={10}
+                    className="max-w-sm rounded-md py-1.5 px-3 bg-[#171717] text-xs font-normal leading-normal text-white shadow-lg [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+                  >
+                    {DOCUMENT_ROLE_DESCRIPTIONS[userRole]}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
 
-            <div className="w-px h-4 bg-[#E5E5E5] block" />
+            {userRole !== "Viewer" && (
+              <div className="w-px h-4 bg-[#E5E5E5] block" />
+            )}
 
             <div className="flex items-center gap-1.5">
               {(userRole === "Owner" || userRole === "Editor") && (
@@ -108,15 +138,15 @@ export default function DocumentPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleToggleEdit}
-                  className={`px-2.5 py-2 text-sm font-medium border rounded-md transition-colors ${
+                  className={`px-2.5 py-2 gap-1.5 text-sm font-medium border rounded-md transition-colors ${
                     isEditMode
                       ? "bg-secondary shadow-[0px_0px_0px_3px_var(--customoutline)] border-3 border-[#A3A3A380]"
                       : "text-foreground border-[#E5E5E5]"
                   }`}
                   disabled={isEditMode}
                 >
-                  <Edit3 size={16} className="mr-1.5" />
-                  {isEditMode ? "Done" : "Edit"}
+                  <NotePencilIcon size={16} />
+                  {isEditMode ? "Done" : "Edit PDF"}
                 </Button>
               )}
               {(userRole === "Owner" || userRole === "Editor" || userRole === "Commenter") && (
@@ -124,30 +154,20 @@ export default function DocumentPage() {
                   variant="ghost"
                   size="sm" 
                   onClick={() => viewerHandleRef.current?.openCommentPanel()}
-                  className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
+                  className="px-2.5 py-2 gap-1.5 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
                   disabled={isEditMode}
                 >
-                  <MessageSquare size={16} className="mr-1.5" /> Comments
+                  <ChatTextIcon size={16} /> Comments
                 </Button>
               )}
               {userRole === "Owner" && (
-                <>
                   <Button 
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsShareModalOpen(true)}
-                    className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
-                    <Share2 size={16} className="mr-1.5" /> Share
+                    className="px-2.5 py-2 gap-1.5 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md">
+                    <ShareNetworkIcon size={16} /> Share
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setDocToDelete({ id: documentId!, title: title, ownerName: "", ownerId: "", updatedAt: "" })}
-                    className="px-2.5 py-2 text-foreground text-sm font-medium border border-[#E5E5E5] rounded-md"
-                  >
-                    <Trash2 size={16} className="mr-1.5" /> Delete
-                  </Button>
-                </>
               )}
             </div>
           </div>
@@ -163,6 +183,11 @@ export default function DocumentPage() {
             documentId={documentId}
             publicId={publicId}
             initialTitle={title}
+            canComment={
+              userRole === "Owner" ||
+              userRole === "Editor" ||
+              userRole === "Commenter"
+            }
             onTitleUpdate={setTitle}
             onViewerInit={(handle) => {
               viewerHandleRef.current = handle;
@@ -179,13 +204,6 @@ export default function DocumentPage() {
         documentId={documentId || ""}
         documentTitle={title}
         workspaceId={workspaceId}
-      />
-
-      <DeleteDocumentModal 
-        document={docToDelete} 
-        isOpen={!!docToDelete} 
-        onClose={() => setDocToDelete(null)} 
-        onSuccess={() => navigate(-1)} 
       />
     </div>
   );

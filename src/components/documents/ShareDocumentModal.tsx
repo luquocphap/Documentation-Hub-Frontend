@@ -484,8 +484,8 @@ export function ShareDocumentModal({
                     />
                   </div>
 
-                  {/* Nút RoleSelect cố định bên phải (vẫn giữ thiết kế CSS cũ) */}
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                  {/* Nút RoleSelect cố định bên phải */}
+                  <div className="absolute right-1 top-5 -translate-y-1/2">
                     <RoleSelect
                       value={selectedNewRole?.name ?? "Select role"}
                       onChange={(role) => setNewRoleId(role._id)}

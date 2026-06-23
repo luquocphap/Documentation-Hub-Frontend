@@ -8,6 +8,12 @@ import {
 import { toast } from "sonner";
 import { Loader2, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { APRYSE_LICENSE_KEY, CLOUDINARY_CLOUD_NAME } from "@/lib/constant";
 import {
   createDocumentSocket,
@@ -37,10 +43,11 @@ import type {
 
 const COMMENT_FLOAT_COORDINATE_MODE: CommentCoordinateMode = "content";
 const COMMENT_FLOAT_FINE_TUNE = { x: -70, y: -170 };
+const MAX_DOCUMENT_TITLE_LENGTH = 255;
 const COMMENT_FLOAT_PLACEMENT_OFFSET: Record<FloatingPlacement, { x: number; y: number }> = {
   button: { x: 8, y: -36 },
-  input: { x: 170, y: -50 },
-  anchor: { x: 0, y: -60 },
+  input: { x: 190, y: -48 },
+  anchor: { x: 5, y: -65 },
 };
 
 type AnchorUpdateMode = "replace" | "merge";
@@ -49,6 +56,7 @@ export function DocumentViewer({
   documentId,
   publicId,
   initialTitle,
+  canComment,
   onViewerInit,
   onTitleUpdate,
   onSaveSuccess,
@@ -60,6 +68,7 @@ export function DocumentViewer({
   const commentSelectionSnapshotRef = useRef<SelectedTextInfo | null>(null);
   const isCommentInputOpenRef = useRef(false);
   const isContentEditModeRef = useRef(false);
+  const canCommentRef = useRef(canComment);
   const onViewerInitRef = useRef(onViewerInit);
   const getFloatingPositionRef = useRef<(
     selection: SelectedTextInfo,
@@ -76,6 +85,7 @@ export function DocumentViewer({
   const [isContentEditMode, setIsContentEditMode] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
+  const isTitleTooLong = title.length > MAX_DOCUMENT_TITLE_LENGTH;
 
   // API-backed comments
   const [comments, setComments] = useState<IDocumentCommentResponse[]>([]);
@@ -138,6 +148,10 @@ export function DocumentViewer({
   useEffect(() => {
     isContentEditModeRef.current = isContentEditMode;
   }, [isContentEditMode]);
+
+  useEffect(() => {
+    canCommentRef.current = canComment;
+  }, [canComment]);
 
   useEffect(() => {
     onViewerInitRef.current = onViewerInit;
@@ -511,6 +525,8 @@ export function DocumentViewer({
     preferFallback = false,
     selectionOverride?: SelectedTextInfo | null
   ) => {
+    if (!canCommentRef.current) return;
+
     if (isContentEditModeRef.current) {
       toast.error("Finish editing before adding a comment.");
       return;
@@ -546,7 +562,7 @@ export function DocumentViewer({
 
   // Load comments from API 
   const loadComments = useCallback(async () => {
-    if (!documentId) return;
+    if (!documentId || !canCommentRef.current) return;
     try {
       const res = await commentApi.getByDocumentId(documentId);
       const loadedComments = res.data;
@@ -572,7 +588,7 @@ export function DocumentViewer({
   }, [documentId, hydrateLoadedComments]);
 
   useEffect(() => {
-    if (!documentId) return;
+    if (!documentId || !canComment) return;
 
     const socket = createDocumentSocket();
 
@@ -714,6 +730,7 @@ export function DocumentViewer({
     };
   }, [
     documentId,
+    canComment,
     appendCommentIfMissing,
     handleCommentDeleted,
     handleCommentUpdated,
@@ -723,6 +740,8 @@ export function DocumentViewer({
 
   // Submit new comment
   const handleSubmitComment = async () => {
+    if (!canCommentRef.current) return;
+
     const draft = commentDraft.trim();
     if (!draft) { toast.error("Enter a comment first."); return; }
 
@@ -896,15 +915,25 @@ export function DocumentViewer({
           docViewer.zoomTo(616 / pageWidth);
           setDefaultViewerTool(docViewer);
           setIsLoading(false);
-          // Load existing comments
-          void loadComments().finally(() => {
-            scheduleAnchorRecalculation();
-          });
+          if (canCommentRef.current) {
+            // Load existing comments
+            void loadComments().finally(() => {
+              scheduleAnchorRecalculation();
+            });
+          }
         });
 
         docViewer.addEventListener("pageNumberUpdated", (page: number) => setCurrentPage(page));
 
         docViewer.addEventListener("textSelected", (quads: unknown[], text: string, pageNumber: number) => {
+          if (!canCommentRef.current) {
+            latestSelectionRef.current = null;
+            commentSelectionSnapshotRef.current = null;
+            setAddBtnPos(null);
+            setInputBoxPos(null);
+            return;
+          }
+
           const selectedText = text.trim();
           if (!selectedText || !Array.isArray(quads) || quads.length === 0) {
             if (!isCommentInputOpenRef.current) {
@@ -958,6 +987,7 @@ export function DocumentViewer({
             },
             isContentEditActive: () => isContentEditModeRef.current,
             openCommentPanel: () => {
+              if (!canCommentRef.current) return;
               closeFloatingUI();
               void loadComments();
               setIsCommentPanelOpen(true);
@@ -1008,6 +1038,7 @@ export function DocumentViewer({
   // Rename
   const handleRename = async () => {
     if (!documentId || !title.trim()) { setIsEditing(false); return; }
+    if (isTitleTooLong) return;
     setIsSaving(true);
     try {
       const res = await documentApi.update(documentId, { title: title.trim() });
@@ -1023,11 +1054,55 @@ export function DocumentViewer({
   };
 
   // Save document
+  const commitActiveContentEdit = async (dv: ApryseDocumentViewer) => {
+    const annotationManager = dv.getAnnotationManager();
+    const contentEditManager = dv.getContentEditManager();
+
+    const selectedAnnotation = annotationManager
+      .getSelectedAnnotations()
+      .find((annotation) =>
+        Boolean(annotation.getCustomData?.("contentEditBoxId"))
+      );
+    const contentBoxId = selectedAnnotation?.getCustomData?.("contentEditBoxId");
+
+    if (!contentBoxId) return;
+
+    const contentBox = contentEditManager.getContentBoxById(contentBoxId);
+    if (!contentBox?.isEditing()) return;
+
+    await new Promise<void>((resolve, reject) => {
+      const handleEditEnded = () => {
+        contentEditManager.removeEventListener(
+          "contentBoxEditEnded",
+          handleEditEnded
+        );
+        resolve();
+      };
+
+      contentEditManager.addEventListener(
+        "contentBoxEditEnded",
+        handleEditEnded
+      );
+
+      try {
+        contentBox.stopContentEditing();
+      } catch (error) {
+        contentEditManager.removeEventListener(
+          "contentBoxEditEnded",
+          handleEditEnded
+        );
+        reject(error);
+      }
+    });
+  };
+
   const handleSaveDocument = async () => {
     const dv = docViewerRef.current;
     if (!dv || !documentId) return;
     setIsSaving(true);
     try {
+      await commitActiveContentEdit(dv);
+
       const doc = dv.getDocument();
       const data = await doc.getFileData({ flatten: false });
       const blob = new Blob([new Uint8Array(data)], { type: "application/pdf" });
@@ -1111,56 +1186,97 @@ export function DocumentViewer({
 
       {/* TITLE BAR */}
       <div className="h-16 py-2 pl-3 pr-4 shrink-0 flex items-center border-b border-[#E5E5E5]">
-        {isEditing ? (
-          <>
-            <span
-              ref={measureRef}
-              className="text-lg font-medium invisible absolute whitespace-pre py-1 px-2.5"
-              aria-hidden
-            >
-              {title}
-            </span>
-            <input
-              ref={inputRef}
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => setIsEditing(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRename();
-                if (e.key === "Escape") { setTitle(initialTitle); setIsEditing(false); }
+        <TooltipProvider>
+          {isEditing ? (
+            <>
+              <span
+                ref={measureRef}
+                className="text-lg font-medium invisible absolute whitespace-pre py-1 px-2.5"
+                aria-hidden
+              >
+                {title}
+              </span>
+              <Tooltip open={isTitleTooLong}>
+                <TooltipTrigger asChild>
+                  <input
+                    ref={inputRef}
+                    autoFocus
+                    value={title}
+                    aria-invalid={isTitleTooLong}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => {
+                      if (!isTitleTooLong) setIsEditing(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRename();
+                      if (e.key === "Escape") { setTitle(initialTitle); setIsEditing(false); }
+                    }}
+                    style={{ width: inputWidth || "auto" }}
+                    className={`text-lg py-1 px-2.5 font-medium text-foreground border rounded-lg outline-none transition-shadow ${
+                      isTitleTooLong
+                        ? "border-destructive ring-2 ring-destructive/30 shadow-[0_0_0_3px_rgba(239,68,68,0.15)]"
+                        : "focus:ring-2 focus:ring-ring/30"
+                    }`}
+                  />
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  align="center"
+                  sideOffset={10}
+                  className="max-w-sm whitespace-nowrap rounded-md py-1.5 px-3 bg-[#171717] text-xs font-normal leading-normal text-white shadow-lg [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+                >
+                  Document name must be 255 characters or fewer
+                </TooltipContent>
+              </Tooltip>
+            </>
+          ) : (
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                requestAnimationFrame(() => {
+                  if (inputRef.current) {
+                    const len = inputRef.current.value.length;
+                    inputRef.current.setSelectionRange(len, len);
+                  }
+                });
               }}
-              style={{ width: inputWidth || "auto" }}
-              className="text-lg py-1 px-2.5 font-medium text-foreground border rounded-lg"
-            />
-          </>
-        ) : (
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              requestAnimationFrame(() => {
-                if (inputRef.current) {
-                  const len = inputRef.current.value.length;
-                  inputRef.current.setSelectionRange(len, len);
-                }
-              });
-            }}
-            className="flex items-center gap-1.5"
-          >
-            <span className="text-lg font-medium text-foreground truncate flex-1">{title}</span>
-            {isSaving
-              ? <Loader2 size={16} className="text-muted-foreground shrink-0 animate-spin" />
-              : <PencilLine size={16} className="text-muted-foreground shrink-0" />
-            }
-          </button>
-        )}
+              className="flex items-center gap-1.5"
+            >
+              <span className="text-lg font-medium text-foreground truncate flex-1">{title}</span>
+              {isSaving ? (
+                <Loader2 size={16} className="text-muted-foreground shrink-0 animate-spin" />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex shrink-0">
+                      <PencilLine size={16} className="text-muted-foreground" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    align="center"
+                    sideOffset={10}
+                    className="rounded-md py-1.5 px-3 bg-[#171717] text-xs font-normal leading-normal text-white shadow-lg [&_svg]:bg-[#171717] [&_svg]:fill-[#171717]"
+                  >
+                    Rename
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </button>
+          )}
+        </TooltipProvider>
 
         {isContentEditMode && (
           <div className="flex gap-2 ml-auto">
             <Button variant="outline" disabled={isSaving} onClick={() => setIsDiscardDialogOpen(true)}>
               Discard changes
             </Button>
-            <Button type="button" className="text-sm font-normal" disabled={isSaving} onClick={handleSaveDocument}>
+            <Button
+              type="button"
+              className="text-sm font-normal"
+              disabled={isSaving}
+              onClick={handleSaveDocument}
+            >
               {isSaving ? <><Loader2 size={14} className="mr-1.5 animate-spin" /> Saving...</> : "Done"}
             </Button>
           </div>
@@ -1203,19 +1319,19 @@ export function DocumentViewer({
             <div ref={viewerRef} style={{ margin: "auto", width: "580px" }} />
 
             {/* Floating add-comment button (shown after text selection) */}
-            {addBtnPos && !inputBoxPos && (
+            {canComment && addBtnPos && !inputBoxPos && (
               <AddCommentButton
                 position={addBtnPos}
                 onClick={() => openCommentInput(
                   addBtnPos,
-                  true,
+                  false,
                   commentSelectionSnapshotRef.current
                 )}
               />
             )}
 
             {/* Comment input box */}
-            {inputBoxPos && (
+            {canComment && inputBoxPos && (
               <CommentInputBox
                 position={inputBoxPos}
                 value={commentDraft}
@@ -1227,7 +1343,7 @@ export function DocumentViewer({
             )}
 
             {/* Comment anchors on annotated text */}
-            {comments.map((comment) => {
+            {canComment && comments.map((comment) => {
               if (comment._id === activeCommentId) return null;
               const pos = anchorPositions[comment._id];
               if (!pos) return null;
@@ -1243,7 +1359,7 @@ export function DocumentViewer({
           </div>
         </div>
 
-        {activeComment && (
+        {canComment && activeComment && (
           <ThreadCommentModal
             key={activeComment._id}
             comment={activeComment}
@@ -1254,7 +1370,7 @@ export function DocumentViewer({
           />
         )}
 
-        {isCommentPanelOpen && (
+        {canComment && isCommentPanelOpen && (
           <CommentPanel
             comments={comments}
             onClose={() => setIsCommentPanelOpen(false)}
