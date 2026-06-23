@@ -47,6 +47,7 @@ export interface ApryseAnnotation {
   Author?: string;
   Color?: unknown;
   Opacity?: number;
+  getCustomData?: (key: string) => string;
   setQuads?: (quads: unknown[]) => void;
   setContents: (value: string) => void;
   setCustomData?: (key: string, value: string) => void;
@@ -58,6 +59,7 @@ export interface ApryseAnnotationManager {
   deleteAnnotation: (annotation: ApryseAnnotation, options?: { force?: boolean }) => void;
   drawAnnotationsFromList: (annotation: ApryseAnnotation) => Promise<unknown>;
   getAnnotationById: (id: string) => ApryseAnnotation | null;
+  getSelectedAnnotations: () => ApryseAnnotation[];
   jumpToAnnotation: (annotation: ApryseAnnotation, options?: { isSmoothScroll?: boolean }) => void;
   selectAnnotation?: (annotation: ApryseAnnotation) => void;
   updateAnnotation: (annotation: ApryseAnnotation) => void;
@@ -67,9 +69,23 @@ export interface ApryseAnnotationManager {
   ) => void;
 }
 
+export interface ApryseContentBox {
+  isEditing: () => boolean;
+  stopContentEditing: () => void;
+}
+
 export interface ApryseContentEditManager {
-  startContentEditMode: () => void;
+  startContentEditMode: () => Promise<void>;
   endContentEditMode: () => void;
+  getContentBoxById: (id: string) => ApryseContentBox;
+  addEventListener(
+    event: "contentBoxEditEnded",
+    callback: () => void
+  ): void;
+  removeEventListener(
+    event: "contentBoxEditEnded",
+    callback: () => void
+  ): void;
 }
 
 export interface ApryseDocument {

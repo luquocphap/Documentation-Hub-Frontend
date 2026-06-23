@@ -1023,11 +1023,55 @@ export function DocumentViewer({
   };
 
   // Save document
+  const commitActiveContentEdit = async (dv: ApryseDocumentViewer) => {
+    const annotationManager = dv.getAnnotationManager();
+    const contentEditManager = dv.getContentEditManager();
+
+    const selectedAnnotation = annotationManager
+      .getSelectedAnnotations()
+      .find((annotation) =>
+        Boolean(annotation.getCustomData?.("contentEditBoxId"))
+      );
+    const contentBoxId = selectedAnnotation?.getCustomData?.("contentEditBoxId");
+
+    if (!contentBoxId) return;
+
+    const contentBox = contentEditManager.getContentBoxById(contentBoxId);
+    if (!contentBox?.isEditing()) return;
+
+    await new Promise<void>((resolve, reject) => {
+      const handleEditEnded = () => {
+        contentEditManager.removeEventListener(
+          "contentBoxEditEnded",
+          handleEditEnded
+        );
+        resolve();
+      };
+
+      contentEditManager.addEventListener(
+        "contentBoxEditEnded",
+        handleEditEnded
+      );
+
+      try {
+        contentBox.stopContentEditing();
+      } catch (error) {
+        contentEditManager.removeEventListener(
+          "contentBoxEditEnded",
+          handleEditEnded
+        );
+        reject(error);
+      }
+    });
+  };
+
   const handleSaveDocument = async () => {
     const dv = docViewerRef.current;
     if (!dv || !documentId) return;
     setIsSaving(true);
     try {
+      await commitActiveContentEdit(dv);
+
       const doc = dv.getDocument();
       const data = await doc.getFileData({ flatten: false });
       const blob = new Blob([new Uint8Array(data)], { type: "application/pdf" });
@@ -1160,7 +1204,12 @@ export function DocumentViewer({
             <Button variant="outline" disabled={isSaving} onClick={() => setIsDiscardDialogOpen(true)}>
               Discard changes
             </Button>
-            <Button type="button" className="text-sm font-normal" disabled={isSaving} onClick={handleSaveDocument}>
+            <Button
+              type="button"
+              className="text-sm font-normal"
+              disabled={isSaving}
+              onClick={handleSaveDocument}
+            >
               {isSaving ? <><Loader2 size={14} className="mr-1.5 animate-spin" /> Saving...</> : "Done"}
             </Button>
           </div>
