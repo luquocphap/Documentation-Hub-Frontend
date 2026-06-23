@@ -144,9 +144,9 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-106.25 h-94 p-0 gap-0 flex flex-col overflow-visible bg-background border border-border rounded-[14px]">
+      <DialogContent className="sm:max-w-106.25 w-full max-h-[calc(100vh-2rem)] p-0 gap-0 flex flex-col overflow-hidden bg-background border border-border rounded-[14px]">
         
-        <DialogHeader className="px-6 py-4 pb-2 border-none">
+        <DialogHeader className="px-6 py-4 pb-2 border-none shrink-0">
           <DialogTitle className="text-[18px] font-semibold text-foreground">
             Invite member
           </DialogTitle>
@@ -165,11 +165,11 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
           </div>
         </div>
 
-        <div className="flex flex-col px-6 pt-4 gap-4 flex-1">
+        <div className="flex flex-col px-6 py-4 gap-4 min-h-0">
           {/* Email Search Area */}
-          <div className="flex flex-col gap-1.5 relative z-10">
+          <div className="flex flex-col gap-1.5 relative z-10 min-h-0">
             <label className="text-xs font-semibold text-foreground">Email addresses</label>
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 border border-border rounded-lg focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring transition-all min-h-10 bg-background">
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 border border-border rounded-lg focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring transition-all min-h-10 max-h-28 overflow-y-auto bg-background">
               
               {selectedEmails.map((email) => (
                 <span 
@@ -255,7 +255,7 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
           </div>
 
           {/* Role Selection */}
-          <div className="flex flex-col gap-1.5 relative z-0">
+          <div className="flex flex-col gap-1.5 relative z-0 shrink-0">
             <label className="text-xs font-semibold text-foreground">Role</label>
             <DropdownMenu>
               <DropdownMenuTrigger className="w-full flex items-center justify-between px-3 h-10 border border-border rounded-lg text-sm bg-background hover:bg-secondary transition-colors outline-none font-medium">
@@ -281,7 +281,7 @@ export function InviteMemberModal({ isOpen, onClose, workspace }: InviteMemberMo
         </div>
 
         {/* Bottom Actions */}
-        <div className="mt-auto px-6 py-5 border-t border-border bg-gray-50/50 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 rounded-b-[14px]">
+        <div className="shrink-0 px-6 py-5 border-t border-border bg-gray-50/50 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 rounded-b-[14px]">
             <Button 
                 type="button" 
                 variant="outline" 
