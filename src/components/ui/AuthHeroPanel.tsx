@@ -4,7 +4,7 @@ import logo from "@/assets/images/logo.png";
 
 export const AuthHeroPanel = memo(function AuthHeroPanel() {
   return (
-      <div className="hidden lg:flex flex-col relative w-2/5 rounded-2xl overflow-hidden bg-secondary">
+      <div className="hidden lg:flex flex-col relative w-3/7 rounded-2xl overflow-hidden bg-secondary">
         <img
           src={hero}
           alt="Workspace Desk"
