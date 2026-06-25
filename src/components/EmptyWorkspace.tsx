@@ -61,49 +61,57 @@ const EmptyWorkspace = ({ onUploadClick, onFileDrop, setIsMdModalOpen }: EmptyWo
             
             {/* THẺ TRÊN: Khu vực upload (Dashed border) */}
             <div
-                role="button"
-                tabIndex={0}
-                aria-label="Upload a PDF document"
-                onClick={onUploadClick}
-                onKeyDown={handleKeyDown}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`relative w-full rounded-lg flex flex-col items-center justify-center gap-2.5 py-6 px-3 cursor-pointer outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    isDragging ? "bg-primary-cyan/10" : "bg-card/50 hover:bg-muted/50"
-                }`}
+              role="button"
+              tabIndex={0}
+              aria-label="Upload a PDF document"
+              onClick={onUploadClick}
+              onKeyDown={handleKeyDown}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className="group relative isolate w-full overflow-hidden rounded-lg flex flex-col items-center justify-center gap-2.5 py-6 px-3 cursor-pointer bg-card/50 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-
-                <svg
-                    className="pointer-events-none absolute inset-0 size-full text-border"
-                    aria-hidden="true"
-                >
-                    <rect
-                    x="0.5"
-                    y="0.5"
-                    width="calc(100% - 1px)"
-                    height="calc(100% - 1px)"
-                    rx="8"
-                    fill="none"
-                    stroke={isDragging ? "currentColor" : "#64748B"}
-                    strokeWidth="1"
-                    strokeDasharray="6 6"
-                    />
-                </svg>
-
-                <img 
-                    src={emptyIllustration} 
-                    alt="Upload illustration" 
-                    className="w-75 h-auto mb-4 opacity-80" 
+              <svg
+                className="pointer-events-none absolute inset-0 z-30 size-full text-border"
+                aria-hidden="true"
+              >
+                <rect
+                  x="0.5"
+                  y="0.5"
+                  width="calc(100% - 1px)"
+                  height="calc(100% - 1px)"
+                  rx="8"
+                  fill="none"
+                  stroke={isDragging ? "currentColor" : "#64748B"}
+                  strokeWidth="1"
+                  strokeDasharray="6 6"
                 />
-                
+              </svg>
+
+              <div className="pointer-events-none relative z-10 flex flex-col items-center justify-center gap-2.5">
+                <img
+                  src={emptyIllustration}
+                  alt="Upload illustration"
+                  className="w-75 h-auto mb-4 opacity-80"
+                />
+
                 <div className="text-center flex flex-col gap-1.5">
-                    <h3 className="text-sm font-semibold text-foreground">Upload your first document</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Drag & drop or click to upload a PDF (max 20MB).
-                    </p>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Upload your first document
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Drag & drop or click to upload a PDF (max 20MB).
+                  </p>
                 </div>
+              </div>
+
+              <div
+                className={`pointer-events-none absolute inset-0 z-20 rounded-lg bg-primary-cyan/20 backdrop-blur-[1px] transition-opacity duration-150 group-hover:opacity-50 ${
+                  isDragging ? "opacity-100" : "opacity-0"
+                }`}
+                aria-hidden="true"
+              />
             </div>
 
             {/* THẺ DƯỚI: Nút tạo mới (Center Content) */}
