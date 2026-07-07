@@ -59,10 +59,13 @@ export interface ApryseAnnotationManager {
   addAnnotation: (annotation: ApryseAnnotation) => void;
   deleteAnnotation: (annotation: ApryseAnnotation, options?: { force?: boolean }) => void;
   drawAnnotationsFromList: (annotation: ApryseAnnotation) => Promise<unknown>;
+  getAnnotationsList: () => ApryseAnnotation[];
   getAnnotationById: (id: string) => ApryseAnnotation | null;
   getSelectedAnnotations: () => ApryseAnnotation[];
+  hideAnnotations: (annotations: ApryseAnnotation[]) => void;
   jumpToAnnotation: (annotation: ApryseAnnotation, options?: { isSmoothScroll?: boolean }) => void;
   selectAnnotation?: (annotation: ApryseAnnotation) => void;
+  showAnnotations: (annotations: ApryseAnnotation[]) => void;
   updateAnnotation: (annotation: ApryseAnnotation) => void;
   addEventListener?: (
     event: "annotationSelected",
@@ -108,6 +111,7 @@ export interface ApryseDisplayModeManager {
 
 export interface ApryseDocumentViewer extends ToolModeViewer {
   addEventListener(event: "documentLoaded", callback: () => void): void;
+  addEventListener(event: "annotationsLoaded", callback: () => void): void;
   addEventListener(event: "zoomUpdated", callback: (zoom: number) => void): void;
   addEventListener(
     event: "pageComplete",
