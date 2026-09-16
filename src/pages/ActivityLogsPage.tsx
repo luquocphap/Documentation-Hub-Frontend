@@ -1,20 +1,14 @@
 import {
   activityApi,
-  workspaceApi,
   type ActivityActionCode,
   type IActivityActionGroup,
   type IActivityActor,
   type IActivityLogItem,
   type ISearchPagination,
-  type IWorkspaceDetailResponse,
-  type WorkspaceItem,
 } from "@/api/api";
 import { ActivityLogFilters } from "@/components/ActivityLogFilters";
 import { ActivityLogPagination } from "@/components/ActivityLogPagination";
 import { ActivityLogTable } from "@/components/ActivityLogTable";
-import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
-import Header from "@/components/ui/Header";
-import { WorkspaceSidebar } from "@/components/WorkspaceSidebar";
 import { createActivitySocket } from "@/lib/socket";
 import { endOfDay, startOfDay } from "date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -104,10 +98,6 @@ function matchesCurrentFilters(
 
 export function ActivityLogPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [workspace, setWorkspace] =
-    useState<IWorkspaceDetailResponse | null>(null);
-  const [workspaceList, setWorkspaceList] = useState<WorkspaceItem[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [actors, setActors] = useState<IActivityActor[]>([]);
   const [actionCategories, setActionCategories] = useState<
     IActivityActionGroup[]
@@ -164,25 +154,6 @@ export function ActivityLogPage() {
     );
   }, [activities]);
 
-  useEffect(() => {
-    const fetchWorkspaceData = async () => {
-      if (!workspaceId) return;
-
-      try {
-        const [detailRes, listRes] = await Promise.all([
-          workspaceApi.getById(workspaceId),
-          workspaceApi.getAll(),
-        ]);
-
-        setWorkspace(detailRes.data);
-        setWorkspaceList(listRes.data);
-      } catch (error) {
-        console.error("Failed to fetch workspace data:", error);
-      }
-    };
-
-    fetchWorkspaceData();
-  }, [workspaceId]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -521,68 +492,39 @@ export function ActivityLogPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <Header showSearch={true} className="shrink-0" />
+    <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-8 py-6 h-full w-full">
+      <div className="flex shrink-0 flex-col gap-4 pt-sm pb-2.5">
+        <h1 className="text-2xl font-heading font-semibold text-foreground">
+          Activity log
+        </h1>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* SIDEBAR */}
-        <WorkspaceSidebar
-          workspaceId={workspaceId}
-          workspace={workspace}
-          workspaceList={workspaceList}
-          activeTab="activity"
-          onCreateWorkspaceClick={() => setIsModalOpen(true)}
+        <ActivityLogFilters
+          actors={actors}
+          actionCategories={actionCategories}
+          selectedActorIds={selectedActorIds}
+          selectedActionIds={selectedActionIds}
+          dateRange={dateRange}
+          isLoadingOptions={isLoadingOptions}
+          onActorIdsChange={handleActorIdsChange}
+          onActionIdsChange={handleActionIdsChange}
+          onDateRangeChange={handleDateRangeChange}
         />
-
-        {/* MAIN CONTENT (SETTINGS) */}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-8 py-6">
-          <div className="flex shrink-0 flex-col gap-4 pt-sm pb-2.5">
-            <h1 className="text-2xl font-heading font-semibold text-foreground">
-              Activity log
-            </h1>
-
-            <ActivityLogFilters
-              actors={actors}
-              actionCategories={actionCategories}
-              selectedActorIds={selectedActorIds}
-              selectedActionIds={selectedActionIds}
-              dateRange={dateRange}
-              isLoadingOptions={isLoadingOptions}
-              onActorIdsChange={handleActorIdsChange}
-              onActionIdsChange={handleActionIdsChange}
-              onDateRangeChange={handleDateRangeChange}
-            />
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <ActivityLogTable
-              activities={activities}
-              isLoading={isLoadingActivities}
-            />
-          </div>
-
-          <div className="mt-auto flex shrink-0 justify-center">
-            <ActivityLogPagination
-              page={page}
-              totalPages={pagination.totalPages}
-              onPageChange={setPage}
-            />
-          </div>
-        </main>
       </div>
 
-      <CreateWorkspaceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={async () => {
-          try {
-            const res = await workspaceApi.getAll();
-            setWorkspaceList(res.data);
-          } catch (error) {
-            console.error("Failed to fetch workspace list:", error);
-          }
-        }}
-      />
-    </div>
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <ActivityLogTable
+          activities={activities}
+          isLoading={isLoadingActivities}
+        />
+      </div>
+
+      <div className="mt-auto flex shrink-0 justify-center">
+        <ActivityLogPagination
+          page={page}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+        />
+      </div>
+    </main>
   );
 }
