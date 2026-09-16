@@ -1,8 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { 
- Trash, Trash2
-} from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Trash, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/textarea";
 import { CustomInput } from "@/components/CustomInput";
@@ -14,21 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { workspaceApi, type IWorkspaceDetailResponse, type WorkspaceItem } from "@/api/api";
-import Header from "@/components/ui/Header";
-import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
+import { workspaceApi } from "@/api/api";
 import { toast } from "sonner";
-import { WorkspaceSidebar } from "@/components/WorkspaceSidebar";
+import { useWorkspace, workspaceQueryKeys } from "@/queries/useWorkspaceQueries";
 
 export default function WorkspaceSettingsPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: workspace, isLoading } = useWorkspace(workspaceId);
   
-  // States quản lý dữ liệu
-  const [workspace, setWorkspace] = useState<IWorkspaceDetailResponse | null>(null);
-  const [workspaceList, setWorkspaceList] = useState<WorkspaceItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // States quản lý Form
@@ -43,33 +37,13 @@ export default function WorkspaceSettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const fetchWorkspaceData = async () => {
-      if (!workspaceId) return;
-      setIsLoading(true);
-      try {
-        const [detailRes, listRes] = await Promise.all([
-          workspaceApi.getById(workspaceId),
-          workspaceApi.getAll()
-        ]);
-        
-        setWorkspace(detailRes.data);
-        setWorkspaceList(listRes.data);
-
-        // Khởi tạo giá trị cho Form
-        setName(detailRes.data.name);
-        setDescription(detailRes.data.description || "");
-        setInitialName(detailRes.data.name);
-        setInitialDesc(detailRes.data.description || "");
-      } catch (error) {
-        toast.error("Failed to fetch workspace details.");
-        console.error("Error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWorkspaceData();
-  }, [workspaceId]);
+    if (workspace) {
+      setName(workspace.name);
+      setDescription(workspace.description || "");
+      setInitialName(workspace.name);
+      setInitialDesc(workspace.description || "");
+    }
+  }, [workspace]);
 
   // Logic Validate Input
   let nameError = "";
@@ -83,7 +57,7 @@ export default function WorkspaceSettingsPage() {
   const isChanged = name.trim() !== initialName || description.trim() !== initialDesc;
   const canSave = isChanged && isFormValid && !isSaving;
 
-  // Handle Update (Custom CSS cho Toast Success theo Figma)
+  // Handle Update
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!canSave || !workspaceId) return;
@@ -98,6 +72,9 @@ export default function WorkspaceSettingsPage() {
       setInitialName(name.trim());
       setInitialDesc(description.trim());
       
+      queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.lists() });
+
       toast.success("Workspace updated successfully", {
         style: {
           backgroundColor: "bg-green-50",
@@ -111,8 +88,6 @@ export default function WorkspaceSettingsPage() {
           icon: 'text-white [&>svg]:text-white [&>svg]:fill-green-700 [&>svg]:w-5 [&>svg]:h-5', 
         }
       });
-      
-      setWorkspace(prev => prev ? { ...prev, name: name.trim(), description: description.trim() } : null);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to update workspace.");
     } finally {
@@ -127,6 +102,8 @@ export default function WorkspaceSettingsPage() {
     setIsDeleting(true);
     try {
       await workspaceApi.delete(workspaceId);
+      queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.lists() });
+
       toast.success("Workspace deleted successfully", {
         style: {
           width: '300px',
@@ -152,108 +129,86 @@ export default function WorkspaceSettingsPage() {
     }
   };
 
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center bg-background text-primary-cyan">Loading settings...</div>;
+  if (isLoading && !workspace) {
+    return <div className="flex flex-1 items-center justify-center bg-background text-primary-cyan">Loading settings...</div>;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Header showSearch={true} />
+    <main className="flex-1 flex flex-col p-7 overflow-y-auto h-full w-full">
+      <div className="max-w-282 w-full mx-auto flex flex-col gap-6">
+        <h1 className="text-2xl font-bold text-foreground">Workspace settings</h1>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* SIDEBAR */}
-        <WorkspaceSidebar 
-          workspaceId={workspaceId}
-          workspace={workspace}
-          workspaceList={workspaceList}
-          activeTab="settings"
-          onCreateWorkspaceClick={() => setIsModalOpen(true)}
-        />
+        <form onSubmit={handleSave} className="flex flex-col gap-6">
+          {/* Thẻ General */}
+          <div className="bg-card border border-border rounded-[14px] flex flex-col overflow-hidden">
+            <div className="px-6 py-6 pb-2">
+              <h2 className="text-base font-semibold text-foreground">General</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Manage your workspace name, domains, and more
+              </p>
+            </div>
+            
+            <div className="p-6 pt-4 flex flex-col gap-5">
+              <CustomInput
+                id="setting-workspace-name"
+                label="Workspace name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setHasInteracted(true);
+                }}
+                onBlur={() => setHasInteracted(true)}
+                error={nameError}
+                required
+              />
 
-        {/* MAIN CONTENT (SETTINGS) */}
-        <main className="flex-1 flex flex-col p-7 overflow-y-auto">
-          <div className="max-w-282 w-full mx-auto flex flex-col gap-6">
-            <h1 className="text-2xl font-bold text-foreground">Workspace settings</h1>
-
-            <form onSubmit={handleSave} className="flex flex-col gap-6">
-              {/* Thẻ General */}
-              <div className="bg-card border border-border rounded-[14px] flex flex-col overflow-hidden">
-                <div className="px-6 py-6 pb-2">
-                  <h2 className="text-base font-semibold text-foreground">General</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Manage your workspace name, domains, and more
-                  </p>
-                </div>
-                
-                <div className="p-6 pt-4 flex flex-col gap-5">
-                  <CustomInput
-                    id="setting-workspace-name"
-                    label="Workspace name"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setHasInteracted(true);
-                    }}
-                    onBlur={() => setHasInteracted(true)}
-                    error={nameError}
-                    required
-                  />
-
-                  <div className="flex flex-col gap-2 w-full">
-                    <label htmlFor="setting-workspace-desc" className="text-sm font-medium text-foreground">
-                      Description <span className="text-muted-foreground font-normal">(Optional)</span>
-                    </label>
-                    <Textarea
-                      id="setting-workspace-desc"
-                      placeholder="What is this Workspace for?"
-                      className="resize-none min-h-16"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Button type="submit" disabled={!canSave} className="px-4">
-                      {isSaving ? "Saving..." : "Save changes"}
-                    </Button>
-                  </div>
-                </div>
+              <div className="flex flex-col gap-2 w-full">
+                <label htmlFor="setting-workspace-desc" className="text-sm font-medium text-foreground">
+                  Description <span className="text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                <Textarea
+                  id="setting-workspace-desc"
+                  placeholder="What is this Workspace for?"
+                  className="resize-none min-h-16"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </div>
-            </form>
 
-            {/* Thẻ Danger Zone */}
-            <div className="bg-card border border-border rounded-[14px] flex flex-col overflow-hidden">
-              <div className="px-6 py-6 pb-2">
-                <h2 className="text-base font-semibold text-foreground">Danger zone</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Deleting this workspace will permanently remove all documents, settings, and member access. This action cannot be undone.
-                </p>
-              </div>
-              
-              <div className="p-6 pt-4">
-                <Button 
-                  type="button"
-                  variant="destructive" 
-                  className="bg-red-500/10 text-red-600 hover:bg-red-500/20 shadow-none gap-2 font-medium"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash size={16} />
-                  Delete Workspace
+              <div>
+                <Button type="submit" disabled={!canSave} className="px-4">
+                  {isSaving ? "Saving..." : "Save changes"}
                 </Button>
               </div>
             </div>
-
           </div>
-        </main>
+        </form>
+
+        {/* Thẻ Danger Zone */}
+        <div className="bg-card border border-border rounded-[14px] flex flex-col overflow-hidden">
+          <div className="px-6 py-6 pb-2">
+            <h2 className="text-base font-semibold text-foreground">Danger zone</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Deleting this workspace will permanently remove all documents, settings, and member access. This action cannot be undone.
+            </p>
+          </div>
+          
+          <div className="p-6 pt-4">
+            <Button 
+              type="button"
+              variant="destructive" 
+              className="bg-red-500/10 text-red-600 hover:bg-red-500/20 shadow-none gap-2 font-medium"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash size={16} />
+              Delete Workspace
+            </Button>
+          </div>
+        </div>
+
       </div>
 
-      <CreateWorkspaceModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={() => { /* Reload Header Dropdown if needed */ }} 
-      />
-
-      {/* Delete Workspace Dialog (Với icon thùng rác đỏ theo Figma) */}
+      {/* Delete Workspace Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent 
           showCloseButton={false} 
@@ -293,7 +248,6 @@ export default function WorkspaceSettingsPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-    </div>
+    </main>
   );
 }

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
   ChevronDown, Check, LayoutGrid, Plus, 
   Users
@@ -14,25 +14,45 @@ import avatarIcon from "@/assets/images/avatar.png";
 import type { IWorkspaceDetailResponse, WorkspaceItem } from "@/api/api";
 import { FilesIcon } from "@phosphor-icons/react/dist/ssr";
 import { ClockIcon, GearIcon } from "@phosphor-icons/react";
+import { useWorkspace, useWorkspaceList } from "@/queries/useWorkspaceQueries";
+import { useUIStore } from "@/stores/useUIStore";
 
 export type SidebarTab = "documents" | "members" | "activity" | "settings";
 
 interface WorkspaceSidebarProps {
-  workspaceId: string | undefined;
-  workspace: IWorkspaceDetailResponse | null;
-  workspaceList: WorkspaceItem[];
-  activeTab: SidebarTab;
-  onCreateWorkspaceClick: () => void;
+  workspaceId?: string | undefined;
+  workspace?: IWorkspaceDetailResponse | null;
+  workspaceList?: WorkspaceItem[];
+  activeTab?: SidebarTab;
+  onCreateWorkspaceClick?: () => void;
 }
 
 export function WorkspaceSidebar({
-  workspaceId,
-  workspace,
-  workspaceList,
-  activeTab,
-  onCreateWorkspaceClick,
-}: WorkspaceSidebarProps) {
+  workspaceId: propWorkspaceId,
+  workspace: propWorkspace,
+  workspaceList: propWorkspaceList,
+  activeTab: propActiveTab,
+  onCreateWorkspaceClick: propOnCreateWorkspaceClick,
+}: WorkspaceSidebarProps = {}) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams<{ workspaceId: string }>();
+  const globalOpenCreate = useUIStore((s) => s.openCreateWorkspaceModal);
+
+  const workspaceId = propWorkspaceId ?? params.workspaceId;
+  const { data: queryWorkspace } = useWorkspace(propWorkspace ? undefined : workspaceId);
+  const { data: queryWorkspaceList } = useWorkspaceList();
+
+  const workspace = propWorkspace ?? queryWorkspace ?? null;
+  const workspaceList = propWorkspaceList ?? queryWorkspaceList ?? [];
+  const onCreateWorkspaceClick = propOnCreateWorkspaceClick ?? globalOpenCreate;
+
+  const activeTab: SidebarTab = propActiveTab ?? (() => {
+    if (location.pathname.endsWith("/members")) return "members";
+    if (location.pathname.endsWith("/activity-logs")) return "activity";
+    if (location.pathname.endsWith("/settings")) return "settings";
+    return "documents";
+  })();
 
   // Hàm tiện ích để style nút tùy theo việc nó có đang được chọn hay không
   const getButtonProps = (tabName: SidebarTab) => {

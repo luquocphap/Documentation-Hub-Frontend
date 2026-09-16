@@ -2,12 +2,13 @@ import logo from "@/assets/images/logo.png";
 import { Bell, HelpCircle, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import avatar from "@/assets/images/avatar.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SearchDocumentsModal } from "../SearchDocumentModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
 import { SignOutIcon } from "@phosphor-icons/react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useUIStore } from "@/stores/useUIStore";
 
 export interface HeaderUser {
   name: string;
@@ -27,14 +28,14 @@ export interface HeaderProps {
 
 function BrandLogo({ name }: { name: string }) {
   return (
-    <a href="/" className="flex items-center gap-2 no-underline shrink-0">
+    <Link to="/dashboard" className="flex items-center gap-2 no-underline shrink-0">
       <div className="w-8 h-8 rounded-md flex items-center justify-center" aria-hidden="true">
         <img src={logo} alt="logo" className="w-full h-full object-center" />
       </div>
       <span className="text-lg font-semibold tracking-tight text-primary">
         {name}
       </span>
-    </a>
+    </Link>
   );
 }
 
@@ -47,10 +48,25 @@ export function Header({
   onUserClick,
   className = "",
 }: HeaderProps) {
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const isSearchModalOpen = useUIStore((state) => state.isSearchModalOpen);
+  const setSearchModalOpen = useUIStore((state) => state.setSearchModalOpen);
+  const openSearchModal = useUIStore((state) => state.openSearchModal);
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        openSearchModal();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openSearchModal]);
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -81,19 +97,25 @@ export function Header({
               <input
                 type="text"
                 placeholder={searchPlaceholder}
-                className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-700 placeholder-gray-400"
+                className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-700 placeholder-gray-400 cursor-pointer"
                 onChange={(e) => onSearchChange?.(e.target.value)}
-                onClick={() => setIsSearchModalOpen(true)}
+                onClick={openSearchModal}
+                readOnly
               />
 
-              <div className="flex items-center gap-1 shrink-0 text-gray-400">
+              <button
+                type="button"
+                onClick={openSearchModal}
+                className="flex items-center gap-1 shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Search keyboard shortcut"
+              >
                 <div className="w-5 h-5 flex items-center justify-center bg-gray-100 rounded text-[11px] font-medium">
                   ⌘
                 </div>
                 <div className="w-5 h-5 flex items-center justify-center bg-gray-100 rounded text-[11px] font-medium">
                   K
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -139,9 +161,9 @@ export function Header({
         </div>
       )}
 
-      {isSearchModalOpen && 
-        <SearchDocumentsModal open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen} />
-      }
+      {isSearchModalOpen && (
+        <SearchDocumentsModal open={isSearchModalOpen} onOpenChange={setSearchModalOpen} />
+      )}
     </header>
   );
 }
